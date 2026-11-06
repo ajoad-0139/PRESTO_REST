@@ -22,15 +22,15 @@ class Theme(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True, blank=True)
+    slug = models.SlugField(unique=True, blank=True, help_text="Leave blank to generate it from the name.")
     description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    language = models.CharField(max_length=10, default="en")
+    is_active = models.BooleanField(default=True, help_text="Only active themes should be offered when creating a new site.")
+    language = models.CharField(max_length=10, default="en", help_text="Language code, e.g. en, bn, fr.")
     thumbnail = models.ImageField(upload_to=file_upload_path, validators=[image_validator])
  
     header = models.FileField(upload_to=file_upload_path, validators=[html_validator])
     footer = models.FileField(upload_to=file_upload_path, validators=[html_validator])
-    body = models.FileField(upload_to=file_upload_path, validators=[html_validator])
+    body = models.FileField(upload_to=file_upload_path, validators=[html_validator], help_text="HTML file for the main page layout.")
  
     css_file = models.FileField(upload_to=file_upload_path, validators=[css_validator])
     js_file = models.FileField(upload_to=file_upload_path, null=True, blank=True, validators=[js_validator])
@@ -66,19 +66,19 @@ class Site (models.Model) :
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    language = models.CharField(max_length=10, default="en")
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
-    published_domain = models.CharField(max_length=255, blank=True, null=True, unique=True)
-    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    language = models.CharField(max_length=10, default="en", help_text="Language code, e.g. en, bn, fr.",)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, help_text="Draft: work in progress. Published: live. Archived: retired.",)
+    published_domain = models.CharField(max_length=255, blank=True, null=True, unique=True, help_text="Custom domain the site is served from, e.g. example.com.",)
+    slug = models.SlugField(max_length=255, unique=True, blank=True, help_text="Leave blank to generate it from the name.",)
     favicon = models.ImageField(upload_to=file_upload_path, null=True, blank=True, validators=[image_validator])
 
-    meta_description = models.CharField(max_length=160, blank=True)
-    og_image = models.FileField(upload_to=file_upload_path, null=True, blank=True, validators=[image_validator])
-    no_index = models.BooleanField(default=False)
+    meta_description = models.CharField(max_length=160, blank=True, help_text="Default search result description. Up to 160 characters.")
+    og_image = models.FileField(upload_to=file_upload_path, null=True, blank=True, validators=[image_validator], help_text="Default image for social media shares. Recommended size: 1200x630 px.")
+    no_index = models.BooleanField(default=False, help_text="Ask search engines not to list this site.",)
      
     header = models.FileField(upload_to=file_upload_path, validators=[html_validator])
     footer = models.FileField(upload_to=file_upload_path, validators=[html_validator])
-    body = models.FileField(upload_to=file_upload_path, validators=[html_validator])
+    body = models.FileField(upload_to=file_upload_path, validators=[html_validator], help_text="HTML file for the main page layout.",)
     
     css_file = models.FileField(upload_to=file_upload_path, validators=[css_validator])
     js_file = models.FileField(upload_to=file_upload_path, null=True, blank=True, validators=[js_validator])
@@ -87,7 +87,7 @@ class Site (models.Model) :
     updated_at = models.DateTimeField(auto_now=True)
 
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE, related_name="sites")
-    theme = models.ForeignKey(Theme, on_delete=models.PROTECT, related_name="sites")
+    theme = models.ForeignKey(Theme, on_delete=models.PROTECT, related_name="sites", help_text="A theme cannot be deleted while sites use it.")
 
     class Meta:
         ordering = ["-created_at"]
@@ -118,16 +118,16 @@ class Page(models.Model) :
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
-    slug = models.SlugField(max_length=255, blank=True)
-    page_type = models.CharField(max_length=255)
-    canonical_url = models.TextField(max_length=500, default="")
+    slug = models.SlugField(max_length=255, blank=True, help_text="URL part of the page, unique within the site. Leave blank to generate it from the title.",)
+    page_type = models.CharField(max_length=255, help_text="Kind of page, e.g. home, about, contact.",)
+    canonical_url = models.TextField(max_length=500, default="", help_text="Preferred full URL of this page for search engines, e.g. https://example.com/about.",)
 
-    meta_title = models.CharField(max_length=70, blank=True)
-    meta_description = models.CharField(max_length=160, blank=True)
-    og_title = models.CharField(max_length=95, blank=True)
-    og_description = models.CharField(max_length=200, blank=True)
-    og_image = models.FileField(upload_to=file_upload_path, null=True, blank=True, validators=[image_validator])
-    no_index = models.BooleanField(default=False)
+    meta_title = models.CharField(max_length=70, blank=True, help_text="Title shown in search results. Up to 70 characters.",)
+    meta_description = models.CharField(max_length=160, blank=True, help_text="Description shown in search results. Up to 160 characters.",)
+    og_title = models.CharField(max_length=95, blank=True, help_text="Title shown when shared on social media. Up to 95 characters.",)
+    og_description = models.CharField(max_length=200, blank=True, help_text="Description shown when shared on social media. Up to 200 characters.",)
+    og_image = models.FileField(upload_to=file_upload_path, null=True, blank=True, validators=[image_validator], help_text="Image for social media shares. Recommended size: 1200x630 px.",)
+    no_index = models.BooleanField(default=False, help_text="Ask search engines not to list this page.",)
 
     html_file = models.FileField(upload_to=file_upload_path, null=True, blank=True, validators=[html_validator])
     css_file = models.FileField(upload_to=file_upload_path, null=True, blank=True, validators=[css_validator])
@@ -169,11 +169,11 @@ class Image(models.Model):
     width = models.PositiveIntegerField(null=True, blank=True, editable=False)
     height = models.PositiveIntegerField(null=True, blank=True, editable=False)
     size = models.PositiveBigIntegerField(null=True, blank=True, editable=False) 
-    alt_text = models.CharField(max_length=255, blank=True)
+    alt_text = models.CharField(max_length=255, blank=True, help_text="Short description for screen readers and for when the image fails to load.",)
 
-    theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.PROTECT, related_name="image_assets")
-    site = models.ForeignKey("Site", null=True, blank=True, on_delete=models.CASCADE, related_name="image_assets")
-    page = models.ForeignKey("Page", null=True, blank=True, on_delete=models.CASCADE, related_name="image_assets")
+    theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.PROTECT, related_name="image_assets", help_text="Set only for theme images. Leave empty for site or page images.")
+    site = models.ForeignKey("Site", null=True, blank=True, on_delete=models.CASCADE, related_name="image_assets", help_text="Filled automatically when a page is selected.",)
+    page = models.ForeignKey("Page", null=True, blank=True, on_delete=models.CASCADE, related_name="image_assets", help_text="Attach the image to a specific page of the site.",)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -215,12 +215,12 @@ class Video(models.Model):
     file = models.FileField(upload_to=file_upload_path, validators=[video_validator])
     size = models.PositiveBigIntegerField(null=True, blank=True, editable=False)  
     title = models.CharField(max_length=255, blank=True)
-    duration = models.PositiveIntegerField(null=True, blank=True, help_text="Seconds")
-    poster = models.ImageField(upload_to=file_upload_path, null=True, blank=True)  
+    duration = models.PositiveIntegerField(null=True, blank=True, help_text="Length of the video in seconds.",)
+    poster = models.ImageField(upload_to=file_upload_path, null=True, blank=True, help_text="Preview image shown before the video plays.",)  
 
-    theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.PROTECT, related_name="video_assets")
-    site = models.ForeignKey("Site", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets")
-    page = models.ForeignKey("Page", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets")
+    theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.PROTECT, related_name="video_assets", help_text="Set only for theme videos. Leave empty for site or page videos.",)
+    site = models.ForeignKey("Site", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets", help_text="Filled automatically when a page is selected.",)
+    page = models.ForeignKey("Page", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets", help_text="Attach the video to a specific page of the site.",)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
