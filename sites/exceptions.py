@@ -46,3 +46,7 @@ class ThemeAlreadyExists(APIError):
 class ThemeNotFound(APIError):
     status_code = 404
     default_detail = "Theme not found."
+
+class ThemeInUse(APIError):
+    status_code = 409
+    default_detail = "This theme cannot be deleted because it is still in use."

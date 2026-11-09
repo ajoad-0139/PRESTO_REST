@@ -70,7 +70,8 @@ class ThemeDetail(APIView):
         pass
  
     def delete(self, request, theme_id):
-        pass
+        self.services.delete(theme_id=theme_id, user=request.user)
+        return success_response(message="Theme deleted")
  
  
 class ThemeImageList(APIView):

@@ -1,6 +1,11 @@
-from django.db import transaction
+import logging
 from sites.models import Theme
-from sites.exceptions import ThemeAlreadyExists, ThemeNotFound
+from django.db import transaction
+from django.db.models import ProtectedError
+from rest_framework.exceptions import PermissionDenied
+from sites.exceptions import ThemeAlreadyExists, ThemeNotFound, ThemeInUse
+
+logger = logging.getLogger(__name__)
 
 class ThemeService :
     @classmethod
@@ -43,3 +48,41 @@ class ThemeService :
             return Theme.objects.prefetch_related("image_assets", "video_assets").get(pk=theme_id)
         except Theme.DoesNotExist:
             raise ThemeNotFound()
+
+    @classmethod
+    @transaction.atomic
+    def delete(cls, *, theme_id, user) -> None:
+        theme = cls.get(theme_id=theme_id)
+
+        if not (user.is_staff or theme.created_by_id == user.id):
+            raise PermissionDenied("You can't delete this theme.")
+
+        if theme.sites.exists():
+            raise ThemeInUse()
+
+        files = cls._collect_files(theme)
+        
+        try:
+            theme.delete()
+        except ProtectedError:
+            raise ThemeInUse()
+
+        transaction.on_commit(lambda: cls._delete_files(files))
+
+    @staticmethod
+    def _collect_files(theme):
+        fields = [theme.thumbnail, theme.header, theme.footer, theme.body, theme.css_file, theme.js_file]
+        for image in theme.image_assets.all():
+            fields.append(image.file)
+        for video in theme.video_assets.all():
+            fields.extend([video.file, video.poster])
+        return [(f.storage, f.name) for f in fields if f and f.name]
+
+
+    @staticmethod
+    def _delete_files(files):
+        for storage, name in files:
+            try:
+                storage.delete(name)
+            except Exception:
+                logger.exception("Could not delete file %s", name)

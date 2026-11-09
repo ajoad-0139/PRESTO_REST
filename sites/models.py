@@ -140,7 +140,7 @@ class Image(models.Model):
     size = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
     alt_text = models.CharField(max_length=255, blank=True, help_text="Short description for screen readers and for when the image fails to load.")
 
-    theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.PROTECT, related_name="image_assets", help_text="Set only for theme images. Leave empty for site or page images.")
+    theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.CASCADE, related_name="image_assets", help_text="Set only for theme images. Leave empty for site or page images.")
     site = models.ForeignKey("Site", null=True, blank=True, on_delete=models.CASCADE, related_name="image_assets", help_text="Filled automatically when a page is selected.")
     page = models.ForeignKey("Page", null=True, blank=True, on_delete=models.CASCADE, related_name="image_assets", help_text="Attach the image to a specific page of the site.")
 
@@ -186,7 +186,7 @@ class Video(models.Model):
     duration = models.PositiveIntegerField(null=True, blank=True, help_text="Length of the video in seconds.")
     poster = models.ImageField(upload_to=file_upload_path, null=True, blank=True, help_text="Preview image shown before the video plays.")
 
-    theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.PROTECT, related_name="video_assets", help_text="Set only for theme videos. Leave empty for site or page videos.")
+    theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets", help_text="Set only for theme videos. Leave empty for site or page videos.")
     site = models.ForeignKey("Site", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets", help_text="Filled automatically when a page is selected.")
     page = models.ForeignKey("Page", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets", help_text="Attach the video to a specific page of the site.")
 
