@@ -1,10 +1,11 @@
 from rest_framework import status
 from rest_framework.views import APIView
-from sites.services.theme import ThemeService
 from sites.responses import success_response
 from sites.pagination import DefaultPagination
 from rest_framework.permissions import IsAuthenticated
-from sites.serializers.theme import ThemeCreateInputSerializer, ThemeOuputSerializer, ThemeListQuerySerializer
+from sites.services.theme import ThemeService, ThemeImageService
+from sites.serializers.theme import ThemeCreateInputSerializer, ThemeOuputSerializer 
+from sites.serializers.theme import ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ImageOutputSerializer
 
 
 class ThemeList(APIView):
@@ -79,12 +80,34 @@ class ThemeImageList(APIView):
     GET  /themes/{theme_id}/images/  -> list theme images
     POST /themes/{theme_id}/images/  -> upload a theme image
     """
- 
+
+    permission_classes = [IsAuthenticated]
+
+    services = ThemeImageService
+    create_input_serializer = ThemeImageCreateInputSerializer
+    output_serializer = ImageOutputSerializer
+    
     def get(self, request, theme_id):
-        pass
+        images = self.services.list(theme_id=theme_id)
+
+        return success_response(
+            self.output_serializer(images, many=True).data,
+            "Images retrieved",
+        )
  
     def post(self, request, theme_id):
-        pass
+        serializer = self.create_input_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        images = self.services.create(
+            theme_id=theme_id, user=request.user, **serializer.validated_data
+        )
+
+        return success_response(
+            self.output_serializer(images, many=True).data,
+            "Images uploaded",
+            status.HTTP_201_CREATED,
+        )
  
  
 class ThemeImageDetail(APIView):

@@ -1,6 +1,6 @@
 import logging
-from sites.models import Theme
 from django.db import transaction
+from sites.models import Theme, Image
 from django.db.models import ProtectedError
 from rest_framework.exceptions import PermissionDenied
 from sites.exceptions import ThemeAlreadyExists, ThemeNotFound, ThemeInUse
@@ -86,3 +86,39 @@ class ThemeService :
                 storage.delete(name)
             except Exception:
                 logger.exception("Could not delete file %s", name)
+
+                
+
+class ThemeImageService :
+    @staticmethod
+    def _get_theme(theme_id) -> Theme:
+        try:
+            return Theme.objects.get(pk=theme_id)
+        except Theme.DoesNotExist:
+            raise ThemeNotFound()
+        
+    @classmethod
+    def list(cls, *, theme_id):
+        theme = cls._get_theme(theme_id)
+        return theme.image_assets.order_by("-created_at")
+        
+    @classmethod
+    @transaction.atomic
+    def create(cls, *, theme_id, user, files, alt_text: str = "") -> "list[Image]":
+        theme = cls._get_theme(theme_id)
+
+        if not (user.is_staff or theme.created_by_id == user.id):
+            raise PermissionDenied("You can't add images to this theme.")
+
+        images = []
+        try:
+            for file in files:
+                images.append(Image.objects.create(theme=theme, file=file, alt_text=alt_text))
+        except Exception:
+            for image in images:
+                image.file.storage.delete(image.file.name)
+            raise
+
+        return images
+
+    
