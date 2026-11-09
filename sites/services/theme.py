@@ -1,6 +1,6 @@
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from sites.models import Theme
-from sites.exceptions import ThemeAlreadyExists
+from sites.exceptions import ThemeAlreadyExists, ThemeNotFound
 
 class ThemeService :
     @classmethod
@@ -11,7 +11,7 @@ class ThemeService :
         
         themes = Theme.objects.filter(name__iexact=name, language=language)
         if themes.exists():
-            ThemeAlreadyExists()
+            raise ThemeAlreadyExists()
 
         theme = Theme(
             name=name, slug=slug, description=description, is_active=is_active,
@@ -22,3 +22,24 @@ class ThemeService :
         theme.save()
 
         return theme
+
+    @classmethod
+    def list(cls, *, is_active=None, language=None, search=None):
+
+        themes = Theme.objects.prefetch_related("image_assets", "video_assets").order_by("-created_at")
+
+        if is_active is not None:
+            themes = themes.filter(is_active=is_active)
+        if language:
+            themes = themes.filter(language=language)
+        if search:
+            themes = themes.filter(name__icontains=search)
+
+        return themes
+
+    @classmethod
+    def get(cls, *, theme_id) -> Theme:
+        try:
+            return Theme.objects.prefetch_related("image_assets", "video_assets").get(pk=theme_id)
+        except Theme.DoesNotExist:
+            raise ThemeNotFound()

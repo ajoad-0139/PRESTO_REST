@@ -2,8 +2,9 @@ from rest_framework import status
 from rest_framework.views import APIView
 from sites.services.theme import ThemeService
 from sites.responses import success_response
+from sites.pagination import DefaultPagination
 from rest_framework.permissions import IsAuthenticated
-from sites.serializers.theme import ThemeCreateInputSerializer, ThemeOuputSerializer
+from sites.serializers.theme import ThemeCreateInputSerializer, ThemeOuputSerializer, ThemeListQuerySerializer
 
 
 class ThemeList(APIView):
@@ -14,12 +15,24 @@ class ThemeList(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    # DI
     services = ThemeService
     create_input_serializer = ThemeCreateInputSerializer
     output_serializer = ThemeOuputSerializer
+    list_query_serializer = ThemeListQuerySerializer
+    pagination_class = DefaultPagination
 
     def get(self, request):
-        pass
+        query = self.list_query_serializer(data=request.query_params, partial=True)
+        query.is_valid(raise_exception=True)
+
+        themes = self.services.list(**query.validated_data)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(themes, request, view=self)
+        items = self.output_serializer(page, many=True).data
+
+        return success_response(paginator.get_paginated_data(items), "Themes retrieved")
  
     def post(self, request):
         serializer = self.create_input_serializer(data=request.data, context={"request": request})
@@ -39,9 +52,19 @@ class ThemeDetail(APIView):
     PATCH  /themes/{theme_id}/  -> update theme
     DELETE /themes/{theme_id}/  -> delete theme
     """
- 
+
+    permission_classes = [IsAuthenticated]
+
+    services = ThemeService
+    output_serializer = ThemeOuputSerializer
+    
     def get(self, request, theme_id):
-        pass
+        theme = self.services.get(theme_id=theme_id)
+
+        return success_response(
+            self.output_serializer(theme).data,
+            "Theme retrieved",
+        )
  
     def patch(self, request, theme_id):
         pass

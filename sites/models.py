@@ -12,7 +12,7 @@ class Theme(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True, blank=True, help_text="Leave blank to generate it from the name.")
+    slug = models.SlugField(blank=True, help_text="Leave blank to generate it from the name.")
     description = models.TextField(blank=True, max_length=1000)
     is_active = models.BooleanField(default=True, help_text="Only active themes should be offered when creating a new site.")
     language = models.CharField(max_length=10, default="en", help_text="Language code, e.g. en, bn, fr.")
@@ -54,7 +54,7 @@ class Site(models.Model):
     language = models.CharField(max_length=10, default="en", help_text="Language code, e.g. en, bn, fr.")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, help_text="Draft: work in progress. Published: live. Archived: retired.")
     published_domain = models.CharField(max_length=255, blank=True, null=True, unique=True, help_text="Custom domain the site is served from, e.g. example.com.")
-    slug = models.SlugField(max_length=255, unique=True, blank=True, help_text="Leave blank to generate it from the name.")
+    slug = models.SlugField(max_length=255, blank=True, help_text="Leave blank to generate it from the name.")
     favicon = models.ImageField(upload_to=file_upload_path, null=True, blank=True)
 
     meta_description = models.CharField(max_length=160, blank=True, help_text="Default search result description. Up to 160 characters.")

@@ -1,5 +1,6 @@
 from sites.models import Theme
 from rest_framework import serializers
+from sites.models import Theme, Image, Video
 from sites.validators import validate_max_size, image_validator, html_validator, css_validator, js_validator
 from sites.constraints import MAX_CSS_SIZE, MAX_HTML_SIZE, MAX_JS_SIZE, MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES
 
@@ -45,5 +46,40 @@ class ThemeOuputSerializer(serializers.ModelSerializer):
             "id", "name", "slug", "description", "is_active", "language",
             "thumbnail", "header", "footer", "body", "css_file", "js_file",
             "created_by", "created_at", "updated_at", 
+        ]
+        read_only_fields = fields
+
+
+class ThemeListQuerySerializer(serializers.Serializer):
+    is_active = serializers.BooleanField(required=False)
+    language = serializers.CharField(required=False)
+    search = serializers.CharField(required=False)
+
+
+
+class ImageOutputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Image
+        fields = ["id", "file", "width", "height", "size", "alt_text", "created_at"]
+        read_only_fields = fields
+
+
+class VideoOutputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = ["id", "file", "title", "duration", "size", "poster", "created_at"]
+        read_only_fields = fields
+
+
+class ThemeOuputSerializer(serializers.ModelSerializer):
+    images = ImageOutputSerializer(source="image_assets", many=True, read_only=True)
+    videos = VideoOutputSerializer(source="video_assets", many=True, read_only=True)
+
+    class Meta:
+        model = Theme
+        fields = [
+            "id", "name", "slug", "description", "is_active", "language",
+            "thumbnail", "header", "footer", "body", "css_file", "js_file",
+            "images", "videos", "created_by", "created_at", "updated_at",
         ]
         read_only_fields = fields

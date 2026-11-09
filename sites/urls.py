@@ -13,7 +13,7 @@ urlpatterns = [
     path("auth/me", MeView.as_view()),
 
     # theme api paths
-    path("themes", ThemeList.as_view(), name="theme-list"),                                   
+    path("themes", ThemeList.as_view(), name="theme-list"),      #done                             
     path("themes/<uuid:theme_id>", ThemeDetail.as_view(), name="theme-detail"),              
     path("themes/<uuid:theme_id>/images", ThemeImageList.as_view(), name="theme-image-list"),
     path("themes/<uuid:theme_id>/images/<uuid:image_id>", ThemeImageDetail.as_view(), name="theme-image-detail"),

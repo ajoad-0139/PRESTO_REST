@@ -42,3 +42,7 @@ def custom_exception_handler(exc, context):
 class ThemeAlreadyExists(APIError):
     status_code = 409
     default_detail = "A theme with this name already exists."
+
+class ThemeNotFound(APIError):
+    status_code = 404
+    default_detail = "Theme not found."
