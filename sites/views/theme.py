@@ -1,4 +1,9 @@
+from rest_framework import status
 from rest_framework.views import APIView
+from sites.services.theme import ThemeService
+from sites.responses import success_response
+from rest_framework.permissions import IsAuthenticated
+from sites.serializers.theme import ThemeCreateInputSerializer, ThemeOuputSerializer
 
 
 class ThemeList(APIView):
@@ -6,14 +11,28 @@ class ThemeList(APIView):
     GET  /themes/  -> list themes
     POST /themes/  -> create a theme
     """
- 
+
+    permission_classes = [IsAuthenticated]
+
+    services = ThemeService
+    create_input_serializer = ThemeCreateInputSerializer
+    output_serializer = ThemeOuputSerializer
+
     def get(self, request):
         pass
  
     def post(self, request):
-        pass
- 
- 
+        serializer = self.create_input_serializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        theme = self.services.create(**serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(theme).data,
+            "Theme created",
+            status.HTTP_201_CREATED,
+        )
+
 class ThemeDetail(APIView):
     """
     GET    /themes/{theme_id}/  -> theme detail

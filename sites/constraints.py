@@ -1,0 +1,6 @@
+MAX_HTML_SIZE = 500 * 1024          
+MAX_CSS_SIZE = 1 * 1024 * 1024      
+MAX_JS_SIZE = 1 * 1024 * 1024       
+MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024  
+
+SUPPORTED_LANGUAGES = {"en", "bn"}
