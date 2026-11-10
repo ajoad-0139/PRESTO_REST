@@ -106,6 +106,12 @@ class SiteImageOutputSerializer(ImageOutputSerializer):
         fields = ImageOutputSerializer.Meta.fields + ["page"]
         read_only_fields = fields
 
+class SiteImageUpdateInputSerializer(serializers.Serializer):
+    file = serializers.ImageField(
+        required=False,
+        validators=[image_validator, validate_max_size(MAX_IMAGE_SIZE)],
+    )
+    alt_text = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
 class SiteVideoCreateInputSerializer(serializers.Serializer):
     files = serializers.ListField(

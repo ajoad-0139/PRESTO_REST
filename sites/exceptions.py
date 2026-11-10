@@ -58,3 +58,7 @@ class ThemeIncomplete(APIError):
 class SiteNotFound(APIError):
     status_code = 404
     default_detail = "Site not found."
+
+class ImageNotFound(APIError):
+    status_code = 404
+    default_detail = "Image not found."

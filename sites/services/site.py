@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils.text import slugify
 from sites.utils import StorageCleaner
 from sites.models import Site, Image, Video
-from sites.exceptions import ThemeIncomplete, SiteNotFound
+from sites.exceptions import ThemeIncomplete, SiteNotFound, ImageNotFound
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
 logger = logging.getLogger(__name__)
@@ -205,6 +205,60 @@ class SiteImageService:
 
         return images
 
+    @classmethod
+    def get(cls, *, site_id, image_id) -> Image:
+        _, image = cls._get_image(site_id=site_id, image_id=image_id)
+        return image
+
+    @classmethod
+    def _get_image(cls, *, site_id, image_id):
+        site = SiteService.get(site_id=site_id)
+        try:
+            image = Image.objects.get(pk=image_id, site=site)
+        except Image.DoesNotExist:
+            raise ImageNotFound()
+        return site, image
+
+    @classmethod
+    def update(cls, *, site_id, image_id, user, **data) -> Image:
+        site, image = cls._get_image(site_id=site_id, image_id=image_id)
+        if not (user.is_staff or site.created_by_id == user.id):
+            raise PermissionDenied(f"You can't edit this image.")
+
+        replacing = "file" in data
+        old_storage = old_name = None
+        if replacing and image.file:
+            old_storage, old_name = image.file.storage, image.file.name
+
+        for field, value in data.items():
+            setattr(image, field, value)
+
+        try:
+            image.save()   
+        except Exception:
+            new = image.file
+            if replacing and new and getattr(new, "_committed", False) and new.name != old_name:
+                StorageCleaner.delete_files(new.storage, new.name)
+            raise
+
+        if old_name and image.file.name != old_name:
+            transaction.on_commit(lambda: StorageCleaner.delete_files(old_storage, old_name))
+
+        return image
+
+    @classmethod
+    @transaction.atomic
+    def delete(cls, *, site_id, image_id, user) -> None:
+        site, image = cls._get_image(site_id=site_id, image_id=image_id)
+        if not (user.is_staff or site.created_by_id == user.id):
+            raise PermissionDenied(f"You can't delete this image.")
+
+        storage, name = (image.file.storage, image.file.name) if image.file else (None, None)
+
+        image.delete()
+
+        if name:
+            transaction.on_commit(lambda: StorageCleaner.delete_files(storage, name))
 
 class SiteVideoService:
 
@@ -245,3 +299,6 @@ class SiteVideoService:
             raise
 
         return videos
+
+
+    

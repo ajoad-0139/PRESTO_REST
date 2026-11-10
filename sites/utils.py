@@ -53,3 +53,10 @@ class StorageCleaner:
                     file.storage.delete(file.name)
                 except Exception:
                     logger.exception("Could not delete file %s", file.name)
+
+    @staticmethod
+    def delete_files(storage, name):
+        try:
+            storage.delete(name)
+        except Exception:
+            logger.exception("Could not delete file %s", name)

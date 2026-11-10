@@ -7,7 +7,7 @@ from sites.responses import success_response
 from sites.services.site import SiteService, SiteImageService, SiteVideoService
 from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
     SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer,
-    SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer
+    SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer, SiteImageUpdateInputSerializer
     )
 
 
@@ -130,15 +130,35 @@ class SiteImageDetail(APIView):
     PATCH  /sites/{site_id}/images/{image_id}/  -> update image (alt text, file)
     DELETE /sites/{site_id}/images/{image_id}/  -> delete image
     """
- 
+
+    permission_classes = [IsAuthenticated]
+
+    services = SiteImageService
+    update_input_serializer = SiteImageUpdateInputSerializer
+    output_serializer = SiteImageOutputSerializer
+    
     def get(self, request, site_id, image_id):
-        pass
+        image = self.services.get(site_id=site_id, image_id=image_id)
+
+        return success_response(
+            self.output_serializer(image, context={"request": request}).data,
+            "Image retrieved",
+        )
  
     def patch(self, request, site_id, image_id):
-        pass
+        serializer = self.update_input_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        image = self.services.update(site_id=site_id, image_id=image_id, user=request.user, **serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(image).data,
+            "Image updated",
+        )
  
     def delete(self, request, site_id, image_id):
-        pass
+        self.services.delete(site_id=site_id, image_id=image_id, user=request.user)
+        return success_response(message="Image deleted")
  
  
 class SiteVideoList(APIView):
