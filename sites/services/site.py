@@ -3,8 +3,8 @@ import logging
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils.text import slugify
-from sites.models import Site, Image
 from sites.utils import StorageCleaner
+from sites.models import Site, Image, Video
 from sites.exceptions import ThemeIncomplete, SiteNotFound
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
@@ -204,3 +204,44 @@ class SiteImageService:
             raise
 
         return images
+
+
+class SiteVideoService:
+
+    @classmethod
+    def list(cls, *, site_id, page=None):
+        site = SiteService.get(site_id=site_id)
+        videos = site.video_assets.order_by("-created_at")
+        if page:
+            videos = videos.filter(page_id=page)
+        return videos
+
+
+    @classmethod
+    @transaction.atomic
+    def create(cls, *, site_id, user, files, page=None) -> "list[Video]":
+        site = SiteService.get(site_id=site_id)
+
+        if not (user.is_staff or site.created_by_id == user.id):
+            raise PermissionDenied("You can't add videos to this site.")
+
+        if page is not None and page.site_id != site.id:
+            raise ValidationError({"page": ["This page belongs to a different site."]})
+
+        videos = []
+        try:
+            for file in files:
+                title = os.path.splitext(file.name)[0][:255]
+                video = Video(site=site, page=page, file=file, title=title)
+                try:
+                    video.save()
+                except Exception:
+                    StorageCleaner.delete_written_files(video)
+                    raise
+                videos.append(video)
+        except Exception:
+            for video in videos:
+                video.file.storage.delete(video.file.name)
+            raise
+
+        return videos

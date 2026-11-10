@@ -4,9 +4,11 @@ from rest_framework.views import APIView
 
 from sites.pagination import DefaultPagination
 from sites.responses import success_response
-from sites.services.site import SiteService, SiteImageService
+from sites.services.site import SiteService, SiteImageService, SiteVideoService
 from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
-    SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer)
+    SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer,
+    SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer
+    )
 
 
 class SiteList(APIView):
@@ -143,13 +145,36 @@ class SiteVideoList(APIView):
     """
     GET  /sites/{site_id}/videos/  -> list site videos (?page=<uuid> to filter)
     POST /sites/{site_id}/videos/  -> upload a site video
-    """
+    """ 
+    permission_classes = [IsAuthenticated]
+
+    services = SiteVideoService
+    create_input_serializer = SiteVideoCreateInputSerializer
+    list_query_serializer = SiteVideoListQuerySerializer
+    output_serializer = SiteVideoOutputSerializer
  
     def get(self, request, site_id):
-        pass
+        query = self.list_query_serializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+
+        videos = self.services.list(site_id=site_id, **query.validated_data)
+
+        return success_response(
+            self.output_serializer(videos, many=True).data,
+            "Videos retrieved",
+        )
  
     def post(self, request, site_id):
-        pass
+        serializer = self.create_input_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        videos = self.services.create(site_id=site_id, user=request.user, **serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(videos, many=True, context={"request": request}).data,
+            "Videos uploaded",
+            status.HTTP_201_CREATED,
+        )
  
  
 class SiteVideoDetail(APIView):
