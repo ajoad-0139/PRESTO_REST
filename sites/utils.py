@@ -1,4 +1,10 @@
 import os
+import logging
+
+from django.core.files.storage import FileSystemStorage
+from django.db.models import FileField
+
+logger = logging.getLogger(__name__)
 
 FOLDERS = {
     "css": "css",
@@ -27,3 +33,23 @@ def file_upload_path(instance, filename):
         raise ValueError(f"file_upload_path: unsupported model '{model}'")
 
     return f"{owner}/{folder}/{filename}"
+
+
+
+class StorageCleaner:
+
+    @staticmethod
+    def delete_written_files(instance):
+        """
+        Remove files that save() already wrote to storage for a NEW instance.
+        Call this only when creating; on an update it would also delete files the row already had.
+        """
+        for field in instance._meta.concrete_fields:
+            if not isinstance(field, FileField):     
+                continue
+            file = getattr(instance, field.name)
+            if file and getattr(file, "_committed", False):
+                try:
+                    file.storage.delete(file.name)
+                except Exception:
+                    logger.exception("Could not delete file %s", file.name)

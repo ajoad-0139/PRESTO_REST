@@ -22,7 +22,7 @@ urlpatterns = [
 
     # site api paths
     path("sites", SiteList.as_view(), name="site-list"),  # done                                    
-    path("sites/<uuid:site_id>", SiteDetail.as_view(), name="site-detail"),   
+    path("sites/<uuid:site_id>", SiteDetail.as_view(), name="site-detail"),   # done
     path("sites/<uuid:site_id>/images", SiteImageList.as_view(), name="site-image-list"),             
     path("sites/<uuid:site_id>/images/<uuid:image_id>", SiteImageDetail.as_view(), name="site-image-detail"),
     path("sites/<uuid:site_id>/videos", SiteVideoList.as_view(), name="site-video-list"),

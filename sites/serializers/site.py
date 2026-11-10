@@ -1,8 +1,9 @@
 from rest_framework import serializers
 
-from sites.models import Site, Theme
+from sites.models import Site, Theme, Page
 from sites.validators import image_validator, validate_max_size
-from sites.constraints import MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES
+from sites.serializers.asset import ImageOutputSerializer, VideoOutputSerializer
+from sites.constraints import MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE
 
 
 class SiteCreateInputSerializer(serializers.ModelSerializer):
@@ -63,7 +64,7 @@ class SiteUpdateInputSerializer(serializers.ModelSerializer):
             "name", "description", "language", "status", "published_domain",
             "favicon", "meta_description", "og_image", "no_index",
         ]
-        
+
     favicon = serializers.ImageField( required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])
     og_image = serializers.FileField( required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])
 
@@ -84,3 +85,23 @@ class SiteUpdateInputSerializer(serializers.ModelSerializer):
     def validate_published_domain(self, value):
         value = (value or "").strip().lower()
         return value or None
+
+
+class SiteImageCreateInputSerializer(serializers.Serializer):
+    files = serializers.ListField(
+        child=serializers.ImageField(validators=[image_validator, validate_max_size(MAX_IMAGE_SIZE)]),
+        allow_empty=False, 
+        max_length=10,
+    )
+    alt_text = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    page = serializers.PrimaryKeyRelatedField(queryset=Page.objects.all(), required=False, allow_null=True)
+
+
+class SiteImageListQuerySerializer(serializers.Serializer):
+    page = serializers.UUIDField(required=False)
+
+
+class SiteImageOutputSerializer(ImageOutputSerializer):
+    class Meta(ImageOutputSerializer.Meta):
+        fields = ImageOutputSerializer.Meta.fields + ["page"]
+        read_only_fields = fields

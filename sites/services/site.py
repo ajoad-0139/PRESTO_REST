@@ -3,7 +3,8 @@ import logging
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils.text import slugify
-from sites.models import Site
+from sites.models import Site, Image
+from sites.utils import StorageCleaner
 from sites.exceptions import ThemeIncomplete, SiteNotFound
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
@@ -162,3 +163,44 @@ class SiteService:
         for video in site.video_assets.all():   
             fields.extend([video.file, video.poster])
         return [(f.storage, f.name) for f in fields if f and f.name]
+
+
+
+class SiteImageService:
+
+    @classmethod
+    def list(cls, *, site_id, page=None):
+        site = SiteService.get(site_id=site_id)
+        images = site.image_assets.order_by("-created_at")
+        if page:
+            images = images.filter(page_id=page)
+        return images
+
+
+    @classmethod
+    @transaction.atomic
+    def create(cls, *, site_id, user, files, alt_text: str = "", page=None) -> "list[Image]":
+        site = SiteService.get(site_id=site_id)
+
+        if not (user.is_staff or site.created_by_id == user.id):
+            raise PermissionDenied("You can't add images to this site.")
+
+        if page is not None and page.site_id != site.id:
+            raise ValidationError({"page": ["This page belongs to a different site."]})
+
+        images = []
+        try:
+            for file in files:
+                image = Image(site=site, page=page, file=file, alt_text=alt_text)
+                try:
+                    image.save()
+                except Exception:
+                    StorageCleaner.delete_written_files(image)
+                    raise
+                images.append(image)
+        except Exception:
+            for image in images:
+                image.file.storage.delete(image.file.name)
+            raise
+
+        return images

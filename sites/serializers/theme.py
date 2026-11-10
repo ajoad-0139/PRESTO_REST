@@ -1,6 +1,6 @@
 from sites.models import Theme
 from rest_framework import serializers
-from sites.models import Theme, Image, Video
+from sites.serializers.asset import ImageOutputSerializer, VideoOutputSerializer
 from sites.validators import validate_max_size, image_validator, html_validator, css_validator, js_validator, video_validator
 from sites.constraints import MAX_CSS_SIZE, MAX_HTML_SIZE, MAX_JS_SIZE, MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE
 
@@ -56,21 +56,6 @@ class ThemeListQuerySerializer(serializers.Serializer):
     is_active = serializers.BooleanField(required=False)
     language = serializers.CharField(required=False)
     search = serializers.CharField(required=False)
-
-
-
-class ImageOutputSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Image
-        fields = ["id", "file", "width", "height", "size", "alt_text", "created_at"]
-        read_only_fields = fields
-
-
-class VideoOutputSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Video
-        fields = ["id", "file", "title", "duration", "size", "poster", "created_at"]
-        read_only_fields = fields
 
 
 class ThemeOuputSerializer(serializers.ModelSerializer):
