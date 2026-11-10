@@ -1,8 +1,8 @@
 from sites.models import Theme
 from rest_framework import serializers
 from sites.models import Theme, Image, Video
-from sites.validators import validate_max_size, image_validator, html_validator, css_validator, js_validator
-from sites.constraints import MAX_CSS_SIZE, MAX_HTML_SIZE, MAX_JS_SIZE, MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES, MAX_IMAGE_SIZE
+from sites.validators import validate_max_size, image_validator, html_validator, css_validator, js_validator, video_validator
+from sites.constraints import MAX_CSS_SIZE, MAX_HTML_SIZE, MAX_JS_SIZE, MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE
 
 
 class ThemeCreateInputSerializer(serializers.ModelSerializer):
@@ -92,3 +92,11 @@ class ThemeImageCreateInputSerializer(serializers.Serializer):
         max_length=10,         
     )
     alt_text = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
+
+class ThemeVideoCreateInputSerializer(serializers.Serializer):
+    files = serializers.ListField(
+        child=serializers.FileField(validators=[video_validator, validate_max_size(MAX_VIDEO_SIZE)]),
+        allow_empty=False,
+        max_length=5,           # keep this low, videos are large
+    )

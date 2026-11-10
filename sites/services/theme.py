@@ -1,7 +1,8 @@
+import os
 import logging
 from django.db import transaction
-from sites.models import Theme, Image
 from django.db.models import ProtectedError
+from sites.models import Theme, Image, Video
 from rest_framework.exceptions import PermissionDenied
 from sites.exceptions import ThemeAlreadyExists, ThemeNotFound, ThemeInUse
 
@@ -121,4 +122,39 @@ class ThemeImageService :
 
         return images
 
-    
+
+
+class ThemeVideoService:
+
+    @staticmethod
+    def _get_theme(theme_id) -> Theme:
+        try:
+            return Theme.objects.get(pk=theme_id)
+        except Theme.DoesNotExist:
+            raise ThemeNotFound()
+
+    @classmethod
+    def list(cls, *, theme_id):
+        theme = cls._get_theme(theme_id)
+        return theme.video_assets.order_by("-created_at")
+
+    @classmethod
+    @transaction.atomic
+    def create(cls, *, theme_id, user, files) -> "list[Video]":
+        theme = cls._get_theme(theme_id)
+
+        if not (user.is_staff or theme.created_by_id == user.id):
+            raise PermissionDenied("You can't add videos to this theme.")
+
+        videos = []
+        try:
+            for file in files:
+                title = os.path.splitext(file.name)[0][:255]
+                videos.append(Video.objects.create(theme=theme, file=file, title=title))
+        except Exception:
+            # rows roll back, but files already written would be orphaned
+            for video in videos:
+                video.file.storage.delete(video.file.name)
+            raise
+
+        return videos

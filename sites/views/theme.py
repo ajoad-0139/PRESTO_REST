@@ -3,9 +3,9 @@ from rest_framework.views import APIView
 from sites.responses import success_response
 from sites.pagination import DefaultPagination
 from rest_framework.permissions import IsAuthenticated
-from sites.services.theme import ThemeService, ThemeImageService
-from sites.serializers.theme import ThemeCreateInputSerializer, ThemeOuputSerializer 
-from sites.serializers.theme import ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ImageOutputSerializer
+from sites.services.theme import ThemeService, ThemeImageService , ThemeVideoService
+from sites.serializers.theme import ThemeCreateInputSerializer, ThemeOuputSerializer , ThemeVideoCreateInputSerializer
+from sites.serializers.theme import ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ImageOutputSerializer, VideoOutputSerializer
 
 
 class ThemeList(APIView):
@@ -36,7 +36,7 @@ class ThemeList(APIView):
         return success_response(paginator.get_paginated_data(items), "Themes retrieved")
  
     def post(self, request):
-        serializer = self.create_input_serializer(data=request.data, context={"request": request})
+        serializer = self.create_input_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         theme = self.services.create(**serializer.validated_data)
@@ -99,9 +99,7 @@ class ThemeImageList(APIView):
         serializer = self.create_input_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        images = self.services.create(
-            theme_id=theme_id, user=request.user, **serializer.validated_data
-        )
+        images = self.services.create(theme_id=theme_id, user=request.user, **serializer.validated_data)
 
         return success_response(
             self.output_serializer(images, many=True).data,
@@ -132,12 +130,32 @@ class ThemeVideoList(APIView):
     GET  /themes/{theme_id}/videos/  -> list theme videos
     POST /themes/{theme_id}/videos/  -> upload a theme video
     """
+
+    permission_classes = [IsAuthenticated]
+
+    services = ThemeVideoService
+    create_input_serializer = ThemeVideoCreateInputSerializer
+    output_serializer = VideoOutputSerializer
  
     def get(self, request, theme_id):
-        pass
+        videos = self.services.list(theme_id=theme_id)
+
+        return success_response(
+            self.output_serializer(videos, many=True).data,
+            "Videos retrieved",
+        )
  
     def post(self, request, theme_id):
-        pass
+        serializer = self.create_input_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        videos = self.services.create(theme_id=theme_id, user=request.user, **serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(videos, many=True).data,
+            "Videos uploaded",
+            status.HTTP_201_CREATED,
+        )
  
  
 class ThemeVideoDetail(APIView):
