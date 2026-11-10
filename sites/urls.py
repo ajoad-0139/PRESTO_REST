@@ -17,7 +17,7 @@ urlpatterns = [
     path("themes/<uuid:theme_id>", ThemeDetail.as_view(), name="theme-detail"),  # done : get, delete   pending : update            
     path("themes/<uuid:theme_id>/images", ThemeImageList.as_view(), name="theme-image-list"), # done
     path("themes/<uuid:theme_id>/images/<uuid:image_id>", ThemeImageDetail.as_view(), name="theme-image-detail"),
-    path("themes/<uuid:theme_id>/videos", ThemeVideoList.as_view(), name="theme-video-list"),
+    path("themes/<uuid:theme_id>/videos", ThemeVideoList.as_view(), name="theme-video-list"), # done
     path("themes/<uuid:theme_id>/videos/<uuid:video_id>", ThemeVideoDetail.as_view(), name="theme-video-detail"),
 
     # site api paths

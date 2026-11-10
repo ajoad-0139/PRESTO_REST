@@ -15,6 +15,8 @@ class ThemeCreateInputSerializer(serializers.ModelSerializer):
             "created_by", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    is_active = serializers.BooleanField(default=True)
     
     header = serializers.FileField(validators=[html_validator,validate_max_size(MAX_HTML_SIZE)])
     footer = serializers.FileField(validators=[html_validator,validate_max_size(MAX_HTML_SIZE)])

@@ -1,16 +1,49 @@
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+
+from sites.pagination import DefaultPagination
+from sites.responses import success_response
+from sites.services.site import SiteService
+from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,)
+
 
 class SiteList(APIView):
     """
     GET  /sites/  -> list the current user's sites
     POST /sites/  -> create a site
     """
- 
+    permission_classes = [IsAuthenticated]
+
+    services = SiteService
+    create_input_serializer = SiteCreateInputSerializer
+    list_query_serializer = SiteListQuerySerializer
+    output_serializer = SiteOutputSerializer
+    pagination_class = DefaultPagination
+    
     def get(self, request):
-        pass
+        query = self.list_query_serializer(data=request.query_params, partial=True)
+        query.is_valid(raise_exception=True)
+
+        sites = self.services.list(user=request.user, **query.validated_data)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(sites, request, view=self)
+        items = self.output_serializer(page, many=True).data
+
+        return success_response(paginator.get_paginated_data(items), "Sites retrieved")
  
     def post(self, request):
-        pass
+        serializer = self.create_input_serializer(data=request.data, context={"request": request},)
+        serializer.is_valid(raise_exception=True)
+
+        site = self.services.create(**serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(site).data,
+            "Site created",
+            status.HTTP_201_CREATED,
+        )
  
 
  

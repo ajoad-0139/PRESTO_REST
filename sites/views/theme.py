@@ -3,9 +3,9 @@ from rest_framework.views import APIView
 from sites.responses import success_response
 from sites.pagination import DefaultPagination
 from rest_framework.permissions import IsAuthenticated
-from sites.services.theme import ThemeService, ThemeImageService , ThemeVideoService
-from sites.serializers.theme import ThemeCreateInputSerializer, ThemeOuputSerializer , ThemeVideoCreateInputSerializer
-from sites.serializers.theme import ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ImageOutputSerializer, VideoOutputSerializer
+from sites.services.theme import (ThemeService, ThemeImageService , ThemeVideoService)
+from sites.serializers.theme import (ThemeCreateInputSerializer, ThemeOuputSerializer , ThemeVideoCreateInputSerializer,
+    ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ImageOutputSerializer, VideoOutputSerializer)
 
 
 class ThemeList(APIView):
@@ -36,7 +36,7 @@ class ThemeList(APIView):
         return success_response(paginator.get_paginated_data(items), "Themes retrieved")
  
     def post(self, request):
-        serializer = self.create_input_serializer(data=request.data)
+        serializer = self.create_input_serializer(data=request.data , context={"request": request},)
         serializer.is_valid(raise_exception=True)
 
         theme = self.services.create(**serializer.validated_data)

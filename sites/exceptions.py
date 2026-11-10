@@ -50,3 +50,7 @@ class ThemeNotFound(APIError):
 class ThemeInUse(APIError):
     status_code = 409
     default_detail = "This theme cannot be deleted because it is still in use."
+
+class ThemeIncomplete(APIError):
+    status_code = 422
+    default_detail = "The selected theme is missing required files."
