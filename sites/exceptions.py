@@ -54,3 +54,7 @@ class ThemeInUse(APIError):
 class ThemeIncomplete(APIError):
     status_code = 422
     default_detail = "The selected theme is missing required files."
+
+class SiteNotFound(APIError):
+    status_code = 404
+    default_detail = "Site not found."

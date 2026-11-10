@@ -1,8 +1,13 @@
 import os
+import logging
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.utils.text import slugify
 from sites.models import Site
-from sites.exceptions import ThemeIncomplete
+from sites.exceptions import ThemeIncomplete, SiteNotFound
+from rest_framework.exceptions import ValidationError, PermissionDenied
+
+logger = logging.getLogger(__name__)
 
 class SiteService:
 
@@ -26,7 +31,7 @@ class SiteService:
                og_image=None, no_index: bool = False) -> Site:
         
         REQUIRED_THEME_FILES = ("header", "footer", "body", "css_file")
-        
+
         missing = [f for f in REQUIRED_THEME_FILES if not getattr(theme, f)]
         if missing:
             raise ThemeIncomplete(
@@ -56,3 +61,104 @@ class SiteService:
         finally:
             field_file.close()
         return ContentFile(content, name=os.path.basename(field_file.name))
+
+    @classmethod
+    def get(cls, *, site_id) -> Site:
+        sites = Site.objects.all() 
+        try:
+            return sites.get(pk=site_id)
+        except Site.DoesNotExist:
+            raise SiteNotFound()
+
+
+
+
+    FILE_FIELDS = ("favicon", "og_image")
+
+    @classmethod
+    def update(cls, *, site, **data):
+        status = data.get("status", site.status)
+        domain = data.get("published_domain", site.published_domain)
+
+        if status == Site.Status.PUBLISHED and not domain:
+            raise ValidationError({
+                "published_domain": ["A domain is required to publish a site."]
+            })
+
+        new_name = data.get("name")
+        if new_name and new_name != site.name:
+            new_slug = slugify(new_name)
+            site.slug = new_slug
+
+        old_files = []
+        old_names = {}
+        for field in cls.FILE_FIELDS:
+            if field in data:
+                old_file = getattr(site, field)
+                if old_file:
+                    old_files.append((old_file.storage, old_file.name))
+                    old_names[field] = old_file.name
+
+        for field, value in data.items():
+            setattr(site, field, value)
+
+        try:
+            site.save()
+        except Exception:
+            cls._delete_new_files(site, data, old_names)
+            raise
+
+        current = {getattr(site, f).name for f in cls.FILE_FIELDS if getattr(site, f)}
+        to_delete = [(s, n) for s, n in old_files if n not in current]
+        transaction.on_commit(lambda: cls._delete_files(to_delete))
+
+        return site
+
+    @classmethod
+    def _delete_new_files(cls, site, data, old_names):
+        for field in cls.FILE_FIELDS:
+            if field not in data:
+                continue
+
+            new_file = getattr(site, field)
+            if new_file and new_file._committed and new_file.name != old_names.get(field):
+                try:
+                    new_file.storage.delete(new_file.name)
+                except Exception:
+                    logger.exception("Could not delete file %s", new_file.name)
+
+    @staticmethod
+    def _delete_files(files):
+        for storage, name in files:
+            try:
+                storage.delete(name)
+            except Exception:
+                logger.exception( "Could not delete file %s",name)
+
+    @classmethod
+    @transaction.atomic
+    def delete(cls, *, site_id, user) -> None:
+        site = cls.get(site_id=site_id)
+
+        if not (user.is_staff or site.created_by_id == user.id):
+            raise PermissionDenied("You can't delete this site.")
+
+        files = cls._collect_files(site)   
+        site.delete()                      
+
+        transaction.on_commit(lambda: cls._delete_files(files))
+
+
+    @staticmethod
+    def _collect_files(site):
+        fields = [
+            site.favicon, site.og_image,
+            site.header, site.footer, site.body, site.css_file, site.js_file,
+        ]
+        for page in site.pages.all():
+            fields.extend([page.html_file, page.css_file, page.js_file, page.og_image])
+        for image in site.image_assets.all():     
+            fields.append(image.file)
+        for video in site.video_assets.all():   
+            fields.extend([video.file, video.poster])
+        return [(f.storage, f.name) for f in fields if f and f.name]

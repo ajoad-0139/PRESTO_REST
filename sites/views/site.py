@@ -5,7 +5,8 @@ from rest_framework.views import APIView
 from sites.pagination import DefaultPagination
 from sites.responses import success_response
 from sites.services.site import SiteService
-from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,)
+from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
+    SiteUpdateInputSerializer)
 
 
 class SiteList(APIView):
@@ -53,15 +54,36 @@ class SiteDetail(APIView):
     PATCH  /sites/{site_id}/  -> update site
     DELETE /sites/{site_id}/  -> delete site
     """
- 
+    permission_classes = [IsAuthenticated]
+
+    services = SiteService
+    output_serializer = SiteOutputSerializer
+    update_input_serializer = SiteUpdateInputSerializer
+    
     def get(self, request, site_id):
-        pass
- 
+        site = self.services.get(site_id=site_id)
+
+        return success_response(
+            self.output_serializer(site).data,
+            "Site retrieved",
+        )
+    
     def patch(self, request, site_id):
-        pass
+        site = self.services.get(site_id=site_id)
+
+        serializer = self.update_input_serializer( site, data=request.data, partial=True, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        site = self.services.update(site=site, **serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(site).data,
+            "Site updated",
+        )
  
     def delete(self, request, site_id):
-        pass
+        self.services.delete(site_id=site_id, user=request.user)
+        return success_response(message="Site deleted")
 
 
 class SiteImageList(APIView):

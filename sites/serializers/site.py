@@ -54,3 +54,33 @@ class SiteOutputSerializer(serializers.ModelSerializer):
             "theme", "created_by", "created_at", "updated_at",
         ]
         read_only_fields = fields
+
+
+class SiteUpdateInputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Site
+        fields = [
+            "name", "description", "language", "status", "published_domain",
+            "favicon", "meta_description", "og_image", "no_index",
+        ]
+        
+    favicon = serializers.ImageField( required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])
+    og_image = serializers.FileField( required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])
+
+    def validate_name(self, value):
+        value = value.strip()
+        if len(value) < 3:
+            raise serializers.ValidationError("Name must be at least 3 characters.")
+        return value
+
+    def validate_language(self, value):
+        value = value.strip().lower()
+        if value not in SUPPORTED_LANGUAGES:
+            raise serializers.ValidationError(
+                f"Unsupported language. Choose from: {', '.join(sorted(SUPPORTED_LANGUAGES))}."
+            )
+        return value
+
+    def validate_published_domain(self, value):
+        value = (value or "").strip().lower()
+        return value or None
