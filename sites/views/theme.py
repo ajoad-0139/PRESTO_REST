@@ -59,6 +59,7 @@ class ThemeDetail(APIView):
 
     services = ThemeService
     output_serializer = ThemeOuputSerializer
+    update_input_serializer = ThemeCreateInputSerializer 
     
     def get(self, request, theme_id):
         theme = self.services.get(theme_id=theme_id)
@@ -69,7 +70,15 @@ class ThemeDetail(APIView):
         )
  
     def patch(self, request, theme_id):
-        pass
+        serializer = self.update_input_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        theme = self.services.update(theme_id=theme_id, user=request.user, **serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(theme).data,
+            "Theme updated",
+        )
  
     def delete(self, request, theme_id):
         self.services.delete(theme_id=theme_id, user=request.user)

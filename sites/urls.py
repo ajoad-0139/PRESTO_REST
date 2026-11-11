@@ -30,6 +30,6 @@ urlpatterns = [
 
     # page api paths
     path("sites/<uuid:site_id>/pages", PageList.as_view(), name="page-list"),   # done                      
-    path("sites/<uuid:site_id>/pages/<uuid:page_id>", PageDetail.as_view(), name="page-detail"),      
+    path("sites/<uuid:site_id>/pages/<uuid:page_id>", PageDetail.as_view(), name="page-detail"), # done     
 
 ]

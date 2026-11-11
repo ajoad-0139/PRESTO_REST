@@ -59,15 +59,13 @@ class ThemeListQuerySerializer(serializers.Serializer):
 
 
 class ThemeOuputSerializer(serializers.ModelSerializer):
-    images = ImageOutputSerializer(source="image_assets", many=True, read_only=True)
-    videos = VideoOutputSerializer(source="video_assets", many=True, read_only=True)
 
     class Meta:
         model = Theme
         fields = [
             "id", "name", "slug", "description", "is_active", "language",
             "thumbnail", "header", "footer", "body", "css_file", "js_file",
-            "images", "videos", "created_by", "created_at", "updated_at",
+            "created_by", "created_at", "updated_at",
         ]
         read_only_fields = fields
 

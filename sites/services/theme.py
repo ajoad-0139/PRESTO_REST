@@ -4,6 +4,8 @@ from django.db import transaction
 from django.db.models import ProtectedError
 from sites.models import Theme, Image, Video
 from rest_framework.exceptions import PermissionDenied
+from sites.utils import StorageCleaner
+from django.utils.text import slugify
 from sites.exceptions import ThemeAlreadyExists, ThemeNotFound, ThemeInUse
 
 logger = logging.getLogger(__name__)
@@ -31,8 +33,7 @@ class ThemeService :
 
     @classmethod
     def list(cls, *, is_active=None, language=None, search=None):
-
-        themes = Theme.objects.prefetch_related("image_assets", "video_assets").order_by("-created_at")
+        themes = Theme.objects.order_by("-created_at")
 
         if is_active is not None:
             themes = themes.filter(is_active=is_active)
@@ -46,9 +47,56 @@ class ThemeService :
     @classmethod
     def get(cls, *, theme_id) -> Theme:
         try:
-            return Theme.objects.prefetch_related("image_assets", "video_assets").get(pk=theme_id)
+            return Theme.objects.get(pk=theme_id)
         except Theme.DoesNotExist:
             raise ThemeNotFound()
+
+    FILE_FIELDS = ("thumbnail", "header", "footer", "body", "css_file", "js_file")
+
+    @classmethod
+    def update(cls, *, theme_id, user, **data) -> Theme:
+        theme = cls.get(theme_id=theme_id)
+        if not (user.is_staff or theme.created_by_id == user.id):
+            raise PermissionDenied("You can't edit this theme.")
+
+        if "name" in data or "language" in data:
+            name = data.get("name", theme.name)
+            language = data.get("language", theme.language)
+            duplicates = Theme.objects.filter(name__iexact=name, language=language).exclude(pk=theme.pk)
+            if duplicates.exists():
+                raise ThemeAlreadyExists()
+
+        if "name" in data and "slug" not in data and data["name"] != theme.name:
+            theme.slug = slugify(data["name"]) or str(theme.id)[:8]
+
+        old_files = {}
+        for field in cls.FILE_FIELDS:
+            if field in data:
+                current = getattr(theme, field)
+                if current:
+                    old_files[field] = (current.storage, current.name)
+
+        for field, value in data.items():
+            setattr(theme, field, value)
+
+        try:
+            theme.save()
+        except Exception:
+            for field in cls.FILE_FIELDS:
+                if field not in data:
+                    continue
+                new = getattr(theme, field)
+                old_name = old_files.get(field, (None, None))[1]
+                if new and getattr(new, "_committed", False) and new.name != old_name:
+                    StorageCleaner.delete_files(new.storage, new.name)
+            raise
+
+        for field, (old_storage, old_name) in old_files.items():
+            new = getattr(theme, field)
+            if not new or new.name != old_name:
+                transaction.on_commit(lambda s=old_storage, n=old_name: StorageCleaner.delete_files(s, n))
+
+        return theme
 
     @classmethod
     @transaction.atomic
