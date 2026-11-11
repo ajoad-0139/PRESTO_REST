@@ -66,3 +66,7 @@ class ImageNotFound(APIError):
 class VideoNotFound(APIError):
     status_code = 404
     default_detail = "Video not found."
+
+class PageAlreadyExists(APIError):
+    status_code = 409
+    default_detail = "A page with this title already exists in this site."

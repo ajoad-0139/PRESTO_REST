@@ -103,12 +103,12 @@ class Page(models.Model):
     meta_description = models.CharField(max_length=160, blank=True, help_text="Description shown in search results. Up to 160 characters.")
     og_title = models.CharField(max_length=95, blank=True, help_text="Title shown when shared on social media. Up to 95 characters.")
     og_description = models.CharField(max_length=200, blank=True, help_text="Description shown when shared on social media. Up to 200 characters.")
-    og_image = models.FileField(upload_to=file_upload_path, null=True, blank=True, help_text="Image for social media shares. Recommended size: 1200x630 px.")
     no_index = models.BooleanField(default=False, help_text="Ask search engines not to list this page.")
 
-    html_file = models.FileField(upload_to=file_upload_path)
-    css_file = models.FileField(upload_to=file_upload_path)
-    js_file = models.FileField(upload_to=file_upload_path, null=True, blank=True)
+    og_image = models.FileField(upload_to=file_upload_path, null=True, blank=True, max_length=255, help_text="Image for social media shares. Recommended size: 1200x630 px.")
+    html_file = models.FileField(upload_to=file_upload_path, max_length=255,)
+    css_file = models.FileField(upload_to=file_upload_path, max_length=255,)
+    js_file = models.FileField(upload_to=file_upload_path,max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

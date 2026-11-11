@@ -29,7 +29,7 @@ urlpatterns = [
     path("sites/<uuid:site_id>/videos/<uuid:video_id>", SiteVideoDetail.as_view(), name="site-video-detail"),   # done
 
     # page api paths
-    path("sites/<uuid:site_id>/pages", PageList.as_view(), name="page-list"),                         
+    path("sites/<uuid:site_id>/pages", PageList.as_view(), name="page-list"),   # done                      
     path("sites/<uuid:site_id>/pages/<uuid:page_id>", PageDetail.as_view(), name="page-detail"),      
 
 ]
