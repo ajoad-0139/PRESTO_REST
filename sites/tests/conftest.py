@@ -97,6 +97,8 @@ def site(owner, theme):
 
 @pytest.fixture
 def page(owner, site):
+    # html_file and css_file are required on a page
     return PageService.create(
-        site_id=site.id, user=owner, title="About Us", page_type="about"
+        site_id=site.id, user=owner, title="About Us", page_type="about",
+        html_file=make_html("about.html"), css_file=make_css("about.css"),
     )

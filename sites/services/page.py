@@ -29,7 +29,9 @@ class PageService :
         if site.pages.filter(title__iexact=title).exists():
             raise PageAlreadyExists()
 
-        page = Page(site=site, title=title, page_type=page_type, **data)
+        slug = slugify(title)
+        cls._ensure_unique(site, title, slug)
+        page = Page(site=site, title=title, page_type=page_type, slug=slug, **data)
 
         try:
             page.save()
@@ -53,6 +55,14 @@ class PageService :
             raise PageNotFound()
         return site, page
 
+    @staticmethod
+    def _ensure_unique(site, title, slug, exclude_pk=None):
+        pages = site.pages.exclude(pk=exclude_pk) if exclude_pk else site.pages.all()
+        if pages.filter(title__iexact=title).exists():
+            raise PageAlreadyExists()
+        if slug and pages.filter(slug=slug).exists():
+            raise PageAlreadyExists()
+
     FILE_FIELDS = ("html_file", "css_file", "js_file", "og_image")
 
     @classmethod
@@ -63,10 +73,10 @@ class PageService :
 
         new_title = data.get("title")
         if new_title:
-            if site.pages.filter(title__iexact=new_title).exclude(pk=page.pk).exists():
-                raise PageAlreadyExists()
+            slug = slugify(new_title)
+            cls._ensure_unique(site, new_title, slug, exclude_pk=page.pk)
             if new_title != page.title:
-                page.slug = slugify(page.title)
+                page.slug = slug or str(page.id)[:8]
 
         old_files = {}
         for field in cls.FILE_FIELDS:

@@ -95,7 +95,7 @@ class Page(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
-    slug = models.SlugField(max_length=255, blank=True, help_text="URL part of the page, unique within the site. Leave blank to generate it from the title.")
+    slug = models.SlugField(max_length=255, blank=True, help_text="URL part of the page, Leave blank to generate it from the title.")
     page_type = models.CharField(max_length=255, help_text="Kind of page, e.g. home, about, contact.")
     canonical_url = models.TextField(max_length=500, default="", help_text="Preferred full URL of this page for search engines, e.g. https://example.com/about.")
 

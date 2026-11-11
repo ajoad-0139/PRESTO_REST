@@ -14,7 +14,9 @@ class PageCreateInputSerializer(serializers.ModelSerializer):
             "og_image", "no_index", "html_file", "css_file", "js_file",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
-    
+
+    canonical_url = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
     html_file = serializers.FileField(required=True, allow_null=False,validators=[html_validator, validate_max_size(MAX_HTML_SIZE)])
     css_file = serializers.FileField(required=True, allow_null=False,validators=[css_validator, validate_max_size(MAX_CSS_SIZE)])
     js_file = serializers.FileField(required=False, allow_null=True, validators=[js_validator, validate_max_size(MAX_JS_SIZE)])
