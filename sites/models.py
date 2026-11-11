@@ -122,7 +122,7 @@ class Page(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            slug = slugify(self.name) or str(self.id)[:8]
+            slug = slugify(self.title) or str(self.id)[:8]
             self.slug = slug
         super().save(*args, **kwargs)
 
