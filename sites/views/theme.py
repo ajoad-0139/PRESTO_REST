@@ -6,7 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from sites.services.theme import (ThemeService, ThemeImageService , ThemeVideoService)
 from sites.serializers.asset import ImageOutputSerializer, VideoOutputSerializer
 from sites.serializers.theme import (ThemeCreateInputSerializer, ThemeOuputSerializer , ThemeVideoCreateInputSerializer,
-    ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ThemeImageUpdateInputSerializer, ThemeImageOutputSerializer)
+    ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ThemeImageUpdateInputSerializer, ThemeImageOutputSerializer,
+    ThemeVideoOutputSerializer, ThemeVideoUpdateInputSerializer)
 
 
 class ThemeList(APIView):
@@ -195,13 +196,34 @@ class ThemeVideoDetail(APIView):
     PATCH  /themes/{theme_id}/videos/{video_id}/  -> update video (title, poster, file)
     DELETE /themes/{theme_id}/videos/{video_id}/  -> delete video
     """
+
+    permission_classes = [IsAuthenticated]
+
+    services = ThemeVideoService
+    update_input_serializer = ThemeVideoUpdateInputSerializer
+    output_serializer = ThemeVideoOutputSerializer
  
     def get(self, request, theme_id, video_id):
-        pass
+        video = self.services.get(theme_id=theme_id, video_id=video_id)
+
+        return success_response(
+            self.output_serializer(video).data,
+            "Video retrieved",
+        )
  
     def patch(self, request, theme_id, video_id):
-        pass
+        serializer = self.update_input_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        video = self.services.update(theme_id=theme_id, video_id=video_id, user=request.user, **serializer.validated_data,)
+
+        return success_response(
+            self.output_serializer(video).data,
+            "Video updated",
+        )
  
     def delete(self, request, theme_id, video_id):
-        pass
+        self.services.delete(theme_id=theme_id,video_id=video_id,user=request.user)
+
+        return success_response(message="Video deleted")
  

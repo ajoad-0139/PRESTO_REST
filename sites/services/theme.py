@@ -7,7 +7,7 @@ from rest_framework.exceptions import PermissionDenied
 from sites.utils import StorageCleaner
 from django.utils.text import slugify
 from sites.exceptions import (ThemeAlreadyExists, ThemeNotFound, ThemeInUse,
-    ImageNotFound)
+    ImageNotFound, VideoNotFound)
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +225,7 @@ class ThemeImageService :
             raise PermissionDenied("You can't delete this image.")
 
         storage, name = ((image.file.storage, image.file.name)if image.file else (None, None))
-        
+
         image.delete()
 
         if name:
@@ -266,3 +266,80 @@ class ThemeVideoService:
             raise
 
         return videos
+
+
+    @classmethod
+    def get(cls, *, theme_id, video_id) -> Video:
+        _, video = cls._get_video(theme_id=theme_id, video_id=video_id)
+        return video
+
+    @classmethod
+    def _get_video(cls, *, theme_id, video_id):
+        theme = ThemeService.get(theme_id=theme_id)
+
+        try:
+            video = Video.objects.get(pk=video_id, theme=theme)
+        except Video.DoesNotExist:
+            raise VideoNotFound()
+
+        return theme, video
+
+    FILE_FIELDS = ("file", "poster")
+    
+    @classmethod
+    def update(cls, *, theme_id, video_id, user, **data) -> Video:
+        theme, video = cls._get_video(theme_id=theme_id, video_id=video_id)
+
+        if not (user.is_staff or theme.created_by_id == user.id):
+            raise PermissionDenied("You can't edit this video.")
+
+        old_files = {}
+        for field in cls.FILE_FIELDS:
+            if field in data:
+                current = getattr(video, field)
+                if current:
+                    old_files[field] = (current.storage, current.name)
+
+        for field, value in data.items():
+            setattr(video, field, value)
+
+        if "file" in data:
+            video.duration = None
+
+        try:
+            video.save()
+        except Exception:
+            for field in cls.FILE_FIELDS:
+                if field not in data:
+                    continue
+
+                new = getattr(video, field)
+                old_name = old_files.get(field, (None, None))[1]
+
+                if (new and getattr(new, "_committed", False) and new.name != old_name):
+                    StorageCleaner.delete_files(new.storage, new.name)
+            raise
+
+        for field, (old_storage, old_name) in old_files.items():
+            new = getattr(video, field)
+
+            if not new or new.name != old_name:
+                transaction.on_commit(lambda s=old_storage, n=old_name: StorageCleaner.delete_files(s, n))
+
+        return video
+
+
+    @classmethod
+    @transaction.atomic
+    def delete(cls, *, theme_id, video_id, user) -> None:
+        theme, video = cls._get_video(theme_id=theme_id, video_id=video_id)
+
+        if not (user.is_staff or theme.created_by_id == user.id):
+            raise PermissionDenied("You can't delete this video.")
+
+        files = [(getattr(video, field).storage, getattr(video, field).name) for field in cls.FILE_FIELDS if getattr(video, field)]
+
+        video.delete()
+
+        for storage, name in files:
+            transaction.on_commit(lambda s=storage, n=name: StorageCleaner.delete_files(s, n))

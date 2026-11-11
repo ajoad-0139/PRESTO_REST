@@ -95,3 +95,16 @@ class ThemeVideoCreateInputSerializer(serializers.Serializer):
         allow_empty=False,
         max_length=5,         
     )
+
+
+class ThemeVideoOutputSerializer(VideoOutputSerializer):
+    class Meta(VideoOutputSerializer.Meta):
+        fields = VideoOutputSerializer.Meta.fields
+        read_only_fields = fields
+
+
+
+class ThemeVideoUpdateInputSerializer(serializers.Serializer):
+    file = serializers.FileField(required=False,validators=[video_validator, validate_max_size(MAX_VIDEO_SIZE)])
+    title = serializers.CharField(max_length=255,required=False, allow_blank=True)
+    poster = serializers.ImageField(required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])
