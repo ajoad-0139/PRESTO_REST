@@ -49,13 +49,32 @@ class PageDetail(APIView):
     PATCH  /sites/{site_id}/pages/{page_id}/  -> update page
     DELETE /sites/{site_id}/pages/{page_id}/  -> delete page
     """
- 
+    permission_classes = [IsAuthenticated]
+
+    services = PageService
+    output_serializer = PageOutputSerializer
+    update_input_serializer = PageCreateInputSerializer
+
     def get(self, request, site_id, page_id):
-        pass
+        page = self.services.get(site_id=site_id, page_id=page_id)
+
+        return success_response(
+            self.output_serializer(page).data,
+            "Page retrieved",
+        )
  
     def patch(self, request, site_id, page_id):
-        pass
+        serializer = self.update_input_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        page = self.services.update(site_id=site_id, page_id=page_id, user=request.user, **serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(page).data,
+            "Page updated",
+        )
  
     def delete(self, request, site_id, page_id):
-        pass
+        self.services.delete(site_id=site_id, page_id=page_id, user=request.user)
+        return success_response(message="Page deleted")
  
