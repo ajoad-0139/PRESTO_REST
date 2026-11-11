@@ -77,9 +77,12 @@ class SiteService:
     FILE_FIELDS = ("favicon", "og_image")
 
     @classmethod
-    def update(cls, *, site, **data):
+    def update(cls, *, site, user,  **data):
         status = data.get("status", site.status)
         domain = data.get("published_domain", site.published_domain)
+
+        if not (user.is_staff or site.created_by_id == user.id):
+            raise PermissionDenied("You can't edit this site.")
 
         if status == Site.Status.PUBLISHED and not domain:
             raise ValidationError({
@@ -331,6 +334,9 @@ class SiteVideoService:
 
         for field, value in data.items():
             setattr(video, field, value)
+
+        if "file" in data:
+            video.duration = None
 
         try:
             video.save()

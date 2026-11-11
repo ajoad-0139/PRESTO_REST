@@ -77,7 +77,7 @@ class SiteDetail(APIView):
         serializer = self.update_input_serializer( site, data=request.data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
-        site = self.services.update(site=site, **serializer.validated_data)
+        site = self.services.update(site=site, user=request.user, **serializer.validated_data)
 
         return success_response(
             self.output_serializer(site).data,
