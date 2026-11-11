@@ -6,7 +6,8 @@ from sites.models import Theme, Image, Video
 from rest_framework.exceptions import PermissionDenied
 from sites.utils import StorageCleaner
 from django.utils.text import slugify
-from sites.exceptions import ThemeAlreadyExists, ThemeNotFound, ThemeInUse
+from sites.exceptions import (ThemeAlreadyExists, ThemeNotFound, ThemeInUse,
+    ImageNotFound)
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +171,65 @@ class ThemeImageService :
 
         return images
 
+    @classmethod
+    def get(cls, *, theme_id, image_id) -> Image:
+        _, image = cls._get_image(theme_id=theme_id, image_id=image_id)
+        return image
+
+    @classmethod
+    def _get_image(cls, *, theme_id, image_id):
+        theme = ThemeService.get(theme_id=theme_id)
+
+        try:
+            image = Image.objects.get(pk=image_id, theme=theme)
+        except Image.DoesNotExist:
+            raise ImageNotFound()
+
+        return theme, image
+
+    @classmethod
+    def update(cls, *, theme_id, image_id, user, **data) -> Image:
+        theme, image = cls._get_image(theme_id=theme_id, image_id=image_id)
+
+        if not (user.is_staff or theme.created_by_id == user.id):
+            raise PermissionDenied("You can't edit this image.")
+
+        replacing = "file" in data
+        old_storage = old_name = None
+
+        if replacing and image.file:
+            old_storage, old_name = image.file.storage, image.file.name
+
+        for field, value in data.items():
+            setattr(image, field, value)
+
+        try:
+            image.save()
+        except Exception:
+            new = image.file
+            if (replacing and new and getattr(new, "_committed", False) and new.name != old_name):
+                StorageCleaner.delete_files(new.storage, new.name)
+            raise
+
+        if old_name and image.file.name != old_name:
+            transaction.on_commit(lambda: StorageCleaner.delete_files(old_storage, old_name))
+
+        return image
+    
+    @classmethod
+    @transaction.atomic
+    def delete(cls, *, theme_id, image_id, user) -> None:
+        theme, image = cls._get_image(theme_id=theme_id, image_id=image_id)
+
+        if not (user.is_staff or theme.created_by_id == user.id):
+            raise PermissionDenied("You can't delete this image.")
+
+        storage, name = ((image.file.storage, image.file.name)if image.file else (None, None))
+        
+        image.delete()
+
+        if name:
+            transaction.on_commit(lambda: StorageCleaner.delete_files(storage, name))
 
 
 class ThemeVideoService:

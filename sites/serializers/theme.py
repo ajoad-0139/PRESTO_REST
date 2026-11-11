@@ -78,10 +78,20 @@ class ThemeImageCreateInputSerializer(serializers.Serializer):
     )
     alt_text = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
+class ThemeImageOutputSerializer(ImageOutputSerializer):
+    class Meta(ImageOutputSerializer.Meta):
+        fields = ImageOutputSerializer.Meta.fields
+        read_only_fields = fields
+
+
+class ThemeImageUpdateInputSerializer(serializers.Serializer):
+    file = serializers.ImageField(required=False,validators=[image_validator,validate_max_size(MAX_IMAGE_SIZE)])
+    alt_text = serializers.CharField(max_length=255,required=False,allow_blank=True)
+
 
 class ThemeVideoCreateInputSerializer(serializers.Serializer):
     files = serializers.ListField(
         child=serializers.FileField(validators=[video_validator, validate_max_size(MAX_VIDEO_SIZE)]),
         allow_empty=False,
-        max_length=5,           # keep this low, videos are large
+        max_length=5,         
     )
