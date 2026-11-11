@@ -24,9 +24,9 @@ urlpatterns = [
     path("sites", SiteList.as_view(), name="site-list"),  # done                                    
     path("sites/<uuid:site_id>", SiteDetail.as_view(), name="site-detail"),   # done
     path("sites/<uuid:site_id>/images", SiteImageList.as_view(), name="site-image-list"),  #done            
-    path("sites/<uuid:site_id>/images/<uuid:image_id>", SiteImageDetail.as_view(), name="site-image-detail"),
+    path("sites/<uuid:site_id>/images/<uuid:image_id>", SiteImageDetail.as_view(), name="site-image-detail"), # done
     path("sites/<uuid:site_id>/videos", SiteVideoList.as_view(), name="site-video-list"),  # done
-    path("sites/<uuid:site_id>/videos/<uuid:video_id>", SiteVideoDetail.as_view(), name="site-video-detail"),    
+    path("sites/<uuid:site_id>/videos/<uuid:video_id>", SiteVideoDetail.as_view(), name="site-video-detail"),   # done
 
     # page api paths
     path("sites/<uuid:site_id>/pages", PageList.as_view(), name="page-list"),                         

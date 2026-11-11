@@ -62,3 +62,7 @@ class SiteNotFound(APIError):
 class ImageNotFound(APIError):
     status_code = 404
     default_detail = "Image not found."
+
+class VideoNotFound(APIError):
+    status_code = 404
+    default_detail = "Video not found."

@@ -130,3 +130,8 @@ class SiteVideoOutputSerializer(VideoOutputSerializer):
     class Meta(VideoOutputSerializer.Meta):
         fields = VideoOutputSerializer.Meta.fields + ["page"]
         read_only_fields = fields
+
+class SiteVideoUpdateInputSerializer(serializers.Serializer):
+    file = serializers.FileField( required=False, validators=[video_validator, validate_max_size(MAX_VIDEO_SIZE)])
+    title = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    poster = serializers.ImageField(required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])

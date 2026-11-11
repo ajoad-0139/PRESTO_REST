@@ -7,7 +7,8 @@ from sites.responses import success_response
 from sites.services.site import SiteService, SiteImageService, SiteVideoService
 from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
     SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer,
-    SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer, SiteImageUpdateInputSerializer
+    SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer, SiteImageUpdateInputSerializer,
+    SiteVideoUpdateInputSerializer
     )
 
 
@@ -203,12 +204,32 @@ class SiteVideoDetail(APIView):
     PATCH  /sites/{site_id}/videos/{video_id}/  -> update video (title, poster, file)
     DELETE /sites/{site_id}/videos/{video_id}/  -> delete video
     """
+
+    permission_classes = [IsAuthenticated]
+
+    services = SiteVideoService
+    update_input_serializer = SiteVideoUpdateInputSerializer
+    output_serializer = SiteVideoOutputSerializer
  
     def get(self, request, site_id, video_id):
-        pass
+        video = self.services.get(site_id=site_id, video_id=video_id)
+
+        return success_response(
+            self.output_serializer(video).data,
+            "Video retrieved",
+        )
  
     def patch(self, request, site_id, video_id):
-        pass
+        serializer = self.update_input_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        video = self.services.update(site_id=site_id, video_id=video_id, user=request.user, **serializer.validated_data)
+
+        return success_response(
+            self.output_serializer(video).data,
+            "Video updated",
+        )
  
     def delete(self, request, site_id, video_id):
-        pass
+        self.services.delete(site_id=site_id, video_id=video_id, user=request.user)
+        return success_response(message="Video deleted")
