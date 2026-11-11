@@ -106,8 +106,8 @@ class Page(models.Model):
     og_image = models.FileField(upload_to=file_upload_path, null=True, blank=True, help_text="Image for social media shares. Recommended size: 1200x630 px.")
     no_index = models.BooleanField(default=False, help_text="Ask search engines not to list this page.")
 
-    html_file = models.FileField(upload_to=file_upload_path, null=True, blank=True)
-    css_file = models.FileField(upload_to=file_upload_path, null=True, blank=True)
+    html_file = models.FileField(upload_to=file_upload_path)
+    css_file = models.FileField(upload_to=file_upload_path)
     js_file = models.FileField(upload_to=file_upload_path, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
