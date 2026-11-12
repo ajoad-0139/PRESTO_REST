@@ -42,8 +42,7 @@ class SiteService:
     @classmethod
     @transaction.atomic
     def create(cls, *, created_by, theme, name: str, language: str = "en", description: str = "",
-               published_domain=None, favicon=None, meta_description: str = "",
-               og_image=None, no_index: bool = False) -> Site:
+        published_domain=None, favicon=None, meta_description: str = "", og_image=None, no_index: bool = False) -> Site:
         """Create a site using the selected theme's files.
 
         Args:

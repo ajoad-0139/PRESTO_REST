@@ -13,10 +13,8 @@ from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySeri
 
 
 class SiteList(APIView):
-    """
-    GET  /sites/  -> list the current user's sites
-    POST /sites/  -> create a site
-    """
+    """Handle listing and creating sites for the authenticated user."""
+
     permission_classes = [IsAuthenticated]
 
     services = SiteService
@@ -26,6 +24,16 @@ class SiteList(APIView):
     pagination_class = DefaultPagination
     
     def get(self, request):
+        """Retrieve the authenticated user's sites.
+
+        Args:
+            request: HTTP request containing query parameters.
+
+        Returns:
+            Response containing paginated sites.
+        """
+
+
         query = self.list_query_serializer(data=request.query_params, partial=True)
         query.is_valid(raise_exception=True)
 
@@ -38,6 +46,16 @@ class SiteList(APIView):
         return success_response(paginator.get_paginated_data(items), "Sites retrieved")
  
     def post(self, request):
+        """Create a new site.
+
+        Args:
+            request: HTTP request containing site data.
+
+        Returns:
+            Response containing the created site.
+        """
+
+
         serializer = self.create_input_serializer(data=request.data, context={"request": request},)
         serializer.is_valid(raise_exception=True)
 
@@ -52,11 +70,8 @@ class SiteList(APIView):
 
  
 class SiteDetail(APIView):
-    """
-    GET    /sites/{site_id}/  -> site detail
-    PATCH  /sites/{site_id}/  -> update site
-    DELETE /sites/{site_id}/  -> delete site
-    """
+    """Handle retrieving, updating, and deleting a site."""
+
     permission_classes = [IsAuthenticated]
 
     services = SiteService
@@ -64,6 +79,17 @@ class SiteDetail(APIView):
     update_input_serializer = SiteUpdateInputSerializer
     
     def get(self, request, site_id):
+        """Retrieve a site by its ID.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the site.
+        """
+
+
         site = self.services.get(site_id=site_id)
 
         return success_response(
@@ -72,6 +98,17 @@ class SiteDetail(APIView):
         )
     
     def patch(self, request, site_id):
+        """Partially update a site.
+
+        Args:
+            request: HTTP request containing fields to update.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the updated site.
+        """
+
+
         site = self.services.get(site_id=site_id)
 
         serializer = self.update_input_serializer( site, data=request.data, partial=True, context={"request": request})
@@ -85,15 +122,23 @@ class SiteDetail(APIView):
         )
  
     def delete(self, request, site_id):
+        """Delete a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+
+        Returns:
+            Response confirming deletion.
+        """
+
+
         self.services.delete(site_id=site_id, user=request.user)
         return success_response(message="Site deleted")
 
 
 class SiteImageList(APIView):
-    """
-    GET  /sites/{site_id}/images/  -> list site images (?page=<uuid> to filter)
-    POST /sites/{site_id}/images/  -> upload a site image
-    """
+    """Handle listing and uploading images for a site."""
 
     permission_classes = [IsAuthenticated]
 
@@ -103,6 +148,17 @@ class SiteImageList(APIView):
     output_serializer = SiteImageOutputSerializer
 
     def get(self, request, site_id):
+        """Retrieve images belonging to a site.
+
+        Args:
+            request: HTTP request containing query parameters.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing serialized images.
+        """
+
+
         query = self.list_query_serializer(data=request.query_params)
         query.is_valid(raise_exception=True)
 
@@ -114,6 +170,17 @@ class SiteImageList(APIView):
         )
 
     def post(self, request, site_id):
+        """Upload images to a site.
+
+        Args:
+            request: HTTP request containing image files and metadata.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the uploaded images.
+        """
+
+
         serializer = self.create_input_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -126,11 +193,7 @@ class SiteImageList(APIView):
         )
  
 class SiteImageDetail(APIView):
-    """
-    GET    /sites/{site_id}/images/{image_id}/  -> image detail
-    PATCH  /sites/{site_id}/images/{image_id}/  -> update image (alt text, file)
-    DELETE /sites/{site_id}/images/{image_id}/  -> delete image
-    """
+    """Handle retrieving, updating, and deleting a site image."""
 
     permission_classes = [IsAuthenticated]
 
@@ -139,6 +202,18 @@ class SiteImageDetail(APIView):
     output_serializer = SiteImageOutputSerializer
     
     def get(self, request, site_id, image_id):
+        """Retrieve an image belonging to a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            image_id: ID of the image.
+
+        Returns:
+            Response containing the image.
+        """
+
+
         image = self.services.get(site_id=site_id, image_id=image_id)
 
         return success_response(
@@ -147,6 +222,18 @@ class SiteImageDetail(APIView):
         )
  
     def patch(self, request, site_id, image_id):
+        """Partially update a site image.
+
+        Args:
+            request: HTTP request containing image fields to update.
+            site_id: ID of the site.
+            image_id: ID of the image.
+
+        Returns:
+            Response containing the updated image.
+        """
+
+
         serializer = self.update_input_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
@@ -158,15 +245,25 @@ class SiteImageDetail(APIView):
         )
  
     def delete(self, request, site_id, image_id):
+        """Delete an image from a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            image_id: ID of the image.
+
+        Returns:
+            Response confirming deletion.
+        """
+
+
         self.services.delete(site_id=site_id, image_id=image_id, user=request.user)
         return success_response(message="Image deleted")
  
  
 class SiteVideoList(APIView):
-    """
-    GET  /sites/{site_id}/videos/  -> list site videos (?page=<uuid> to filter)
-    POST /sites/{site_id}/videos/  -> upload a site video
-    """ 
+    """Handle listing and uploading videos for a site."""
+
     permission_classes = [IsAuthenticated]
 
     services = SiteVideoService
@@ -175,6 +272,17 @@ class SiteVideoList(APIView):
     output_serializer = SiteVideoOutputSerializer
  
     def get(self, request, site_id):
+        """Retrieve videos belonging to a site.
+
+        Args:
+            request: HTTP request containing query parameters.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing serialized videos.
+        """
+
+
         query = self.list_query_serializer(data=request.query_params)
         query.is_valid(raise_exception=True)
 
@@ -186,6 +294,17 @@ class SiteVideoList(APIView):
         )
  
     def post(self, request, site_id):
+        """Upload videos to a site.
+
+        Args:
+            request: HTTP request containing video files and metadata.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the uploaded videos.
+        """
+
+
         serializer = self.create_input_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -199,11 +318,7 @@ class SiteVideoList(APIView):
  
  
 class SiteVideoDetail(APIView):
-    """
-    GET    /sites/{site_id}/videos/{video_id}/  -> video detail
-    PATCH  /sites/{site_id}/videos/{video_id}/  -> update video (title, poster, file)
-    DELETE /sites/{site_id}/videos/{video_id}/  -> delete video
-    """
+    """Handle retrieving, updating, and deleting a site video."""
 
     permission_classes = [IsAuthenticated]
 
@@ -212,6 +327,18 @@ class SiteVideoDetail(APIView):
     output_serializer = SiteVideoOutputSerializer
  
     def get(self, request, site_id, video_id):
+        """Retrieve a video belonging to a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            video_id: ID of the video.
+
+        Returns:
+            Response containing the video.
+        """
+
+
         video = self.services.get(site_id=site_id, video_id=video_id)
 
         return success_response(
@@ -220,6 +347,18 @@ class SiteVideoDetail(APIView):
         )
  
     def patch(self, request, site_id, video_id):
+        """Partially update a site video.
+
+        Args:
+            request: HTTP request containing video fields to update.
+            site_id: ID of the site.
+            video_id: ID of the video.
+
+        Returns:
+            Response containing the updated video.
+        """
+
+
         serializer = self.update_input_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
@@ -231,5 +370,17 @@ class SiteVideoDetail(APIView):
         )
  
     def delete(self, request, site_id, video_id):
+        """Delete a video from a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            video_id: ID of the video.
+
+        Returns:
+            Response confirming deletion.
+        """
+
+        
         self.services.delete(site_id=site_id, video_id=video_id, user=request.user)
         return success_response(message="Video deleted")

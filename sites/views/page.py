@@ -9,10 +9,8 @@ from sites.serializers.page import (
 )
 
 class PageList(APIView):
-    """
-    GET  /sites/{site_id}/pages/  -> list pages of a site
-    POST /sites/{site_id}/pages/  -> create a page
-    """
+    """Handle listing and creating pages for a site."""
+
     permission_classes = [IsAuthenticated]
 
     services = PageService
@@ -21,6 +19,17 @@ class PageList(APIView):
     output_serializer = PageOutputSerializer
     
     def get(self, request, site_id):
+        """Retrieve pages belonging to a site.
+
+        Args:
+            request: HTTP request containing query parameters.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing serialized pages.
+        """
+
+
         query = self.list_query_serializer(data=request.query_params)
         query.is_valid(raise_exception=True)
 
@@ -32,6 +41,16 @@ class PageList(APIView):
         )
  
     def post(self, request, site_id):
+        """Create a new page for a site.
+
+        Args:
+            request: HTTP request containing page data.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the created page.
+        """
+
         serializer = self.create_input_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -44,11 +63,8 @@ class PageList(APIView):
         )
  
 class PageDetail(APIView):
-    """
-    GET    /sites/{site_id}/pages/{page_id}/  -> page detail
-    PATCH  /sites/{site_id}/pages/{page_id}/  -> update page
-    DELETE /sites/{site_id}/pages/{page_id}/  -> delete page
-    """
+    """Handle retrieving, updating, and deleting a site page."""
+
     permission_classes = [IsAuthenticated]
 
     services = PageService
@@ -56,6 +72,18 @@ class PageDetail(APIView):
     update_input_serializer = PageCreateInputSerializer
 
     def get(self, request, site_id, page_id):
+        """Retrieve a specific page.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            page_id: ID of the page.
+
+        Returns:
+            Response containing the serialized page.
+        """
+
+
         page = self.services.get(site_id=site_id, page_id=page_id)
 
         return success_response(
@@ -64,6 +92,18 @@ class PageDetail(APIView):
         )
  
     def patch(self, request, site_id, page_id):
+        """Partially update an existing page.
+
+        Args:
+            request: HTTP request containing fields to update.
+            site_id: ID of the site.
+            page_id: ID of the page.
+
+        Returns:
+            Response containing the updated page.
+        """
+
+
         serializer = self.update_input_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
@@ -75,6 +115,18 @@ class PageDetail(APIView):
         )
  
     def delete(self, request, site_id, page_id):
+        """Delete a page from a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            page_id: ID of the page.
+
+        Returns:
+            Response confirming deletion.
+        """
+
+        
         self.services.delete(site_id=site_id, page_id=page_id, user=request.user)
         return success_response(message="Page deleted")
  

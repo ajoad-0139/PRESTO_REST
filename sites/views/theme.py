@@ -11,10 +11,7 @@ from sites.serializers.theme import (ThemeCreateInputSerializer, ThemeOuputSeria
 
 
 class ThemeList(APIView):
-    """
-    GET  /themes/  -> list themes
-    POST /themes/  -> create a theme
-    """
+    """Handle listing and creating themes."""
 
     permission_classes = [IsAuthenticated]
 
@@ -26,6 +23,16 @@ class ThemeList(APIView):
     pagination_class = DefaultPagination
 
     def get(self, request):
+        """Retrieve themes with optional filtering and pagination.
+
+        Args:
+            request: HTTP request containing query parameters.
+
+        Returns:
+            Response containing paginated themes.
+        """
+
+
         query = self.list_query_serializer(data=request.query_params, partial=True)
         query.is_valid(raise_exception=True)
 
@@ -38,6 +45,16 @@ class ThemeList(APIView):
         return success_response(paginator.get_paginated_data(items), "Themes retrieved")
  
     def post(self, request):
+        """Create a new theme.
+
+        Args:
+            request: HTTP request containing theme data.
+
+        Returns:
+            Response containing the created theme.
+        """
+
+
         serializer = self.create_input_serializer(data=request.data , context={"request": request},)
         serializer.is_valid(raise_exception=True)
 
@@ -50,11 +67,7 @@ class ThemeList(APIView):
         )
 
 class ThemeDetail(APIView):
-    """
-    GET    /themes/{theme_id}/  -> theme detail
-    PATCH  /themes/{theme_id}/  -> update theme
-    DELETE /themes/{theme_id}/  -> delete theme
-    """
+    """Handle retrieving, updating, and deleting a theme."""
 
     permission_classes = [IsAuthenticated]
 
@@ -63,6 +76,17 @@ class ThemeDetail(APIView):
     update_input_serializer = ThemeCreateInputSerializer 
     
     def get(self, request, theme_id):
+        """Retrieve a theme by its ID.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing the theme.
+        """
+
+
         theme = self.services.get(theme_id=theme_id)
 
         return success_response(
@@ -71,6 +95,17 @@ class ThemeDetail(APIView):
         )
  
     def patch(self, request, theme_id):
+        """Partially update a theme.
+
+        Args:
+            request: HTTP request containing fields to update.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing the updated theme.
+        """
+
+
         serializer = self.update_input_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
@@ -82,15 +117,23 @@ class ThemeDetail(APIView):
         )
  
     def delete(self, request, theme_id):
+        """Delete a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response confirming deletion.
+        """
+
+
         self.services.delete(theme_id=theme_id, user=request.user)
         return success_response(message="Theme deleted")
  
  
 class ThemeImageList(APIView):
-    """
-    GET  /themes/{theme_id}/images/  -> list theme images
-    POST /themes/{theme_id}/images/  -> upload a theme image
-    """
+    """Handle listing and uploading images for a theme."""
 
     permission_classes = [IsAuthenticated]
 
@@ -99,6 +142,17 @@ class ThemeImageList(APIView):
     output_serializer = ImageOutputSerializer
     
     def get(self, request, theme_id):
+        """Retrieve images belonging to a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing serialized images.
+        """
+
+
         images = self.services.list(theme_id=theme_id)
 
         return success_response(
@@ -107,6 +161,17 @@ class ThemeImageList(APIView):
         )
  
     def post(self, request, theme_id):
+        """Upload images to a theme.
+
+        Args:
+            request: HTTP request containing image files and metadata.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing the uploaded images.
+        """
+
+
         serializer = self.create_input_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -120,11 +185,7 @@ class ThemeImageList(APIView):
  
  
 class ThemeImageDetail(APIView):
-    """
-    GET    /themes/{theme_id}/images/{image_id}/  -> image detail
-    PATCH  /themes/{theme_id}/images/{image_id}/  -> update image (alt text, file)
-    DELETE /themes/{theme_id}/images/{image_id}/  -> delete image
-    """
+    """Handle retrieving, updating, and deleting a theme image."""
 
     permission_classes = [IsAuthenticated]
 
@@ -133,6 +194,18 @@ class ThemeImageDetail(APIView):
     output_serializer = ThemeImageOutputSerializer
  
     def get(self, request, theme_id, image_id):
+        """Retrieve an image belonging to a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+
+        Returns:
+            Response containing the image.
+        """
+
+
         image = self.services.get(theme_id=theme_id, image_id=image_id)
 
         return success_response(
@@ -141,6 +214,18 @@ class ThemeImageDetail(APIView):
         )
  
     def patch(self, request, theme_id, image_id):
+        """Partially update a theme image.
+
+        Args:
+            request: HTTP request containing image fields to update.
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+
+        Returns:
+            Response containing the updated image.
+        """
+
+
         serializer = self.update_input_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
@@ -152,16 +237,25 @@ class ThemeImageDetail(APIView):
         )
  
     def delete(self, request, theme_id, image_id):
+        """Delete an image from a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+
+        Returns:
+            Response confirming deletion.
+        """
+
+
         self.services.delete(theme_id=theme_id, image_id=image_id, user=request.user)
 
         return success_response(message="Image deleted")
  
  
 class ThemeVideoList(APIView):
-    """
-    GET  /themes/{theme_id}/videos/  -> list theme videos
-    POST /themes/{theme_id}/videos/  -> upload a theme video
-    """
+    """Handle listing and uploading videos for a theme."""
 
     permission_classes = [IsAuthenticated]
 
@@ -170,6 +264,17 @@ class ThemeVideoList(APIView):
     output_serializer = VideoOutputSerializer
  
     def get(self, request, theme_id):
+        """Retrieve videos belonging to a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing serialized videos.
+        """
+
+
         videos = self.services.list(theme_id=theme_id)
 
         return success_response(
@@ -178,6 +283,16 @@ class ThemeVideoList(APIView):
         )
  
     def post(self, request, theme_id):
+        """Upload videos to a theme.
+
+        Args:
+            request: HTTP request containing video files and metadata.
+
+        Returns:
+            Response containing the uploaded videos.
+        """
+
+         
         serializer = self.create_input_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -191,11 +306,7 @@ class ThemeVideoList(APIView):
  
  
 class ThemeVideoDetail(APIView):
-    """
-    GET    /themes/{theme_id}/videos/{video_id}/  -> video detail
-    PATCH  /themes/{theme_id}/videos/{video_id}/  -> update video (title, poster, file)
-    DELETE /themes/{theme_id}/videos/{video_id}/  -> delete video
-    """
+    """Handle retrieving, updating, and deleting a theme video."""
 
     permission_classes = [IsAuthenticated]
 
@@ -204,6 +315,18 @@ class ThemeVideoDetail(APIView):
     output_serializer = ThemeVideoOutputSerializer
  
     def get(self, request, theme_id, video_id):
+        """Retrieve a video belonging to a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+
+        Returns:
+            Response containing the video.
+        """
+
+
         video = self.services.get(theme_id=theme_id, video_id=video_id)
 
         return success_response(
@@ -212,6 +335,18 @@ class ThemeVideoDetail(APIView):
         )
  
     def patch(self, request, theme_id, video_id):
+        """Partially update a theme video.
+
+        Args:
+            request: HTTP request containing video fields to update.
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+
+        Returns:
+            Response containing the updated video.
+        """
+
+
         serializer = self.update_input_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
@@ -223,6 +358,18 @@ class ThemeVideoDetail(APIView):
         )
  
     def delete(self, request, theme_id, video_id):
+        """Delete a video from a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+
+        Returns:
+            Response confirming deletion.
+        """
+
+        
         self.services.delete(theme_id=theme_id,video_id=video_id,user=request.user)
 
         return success_response(message="Video deleted")
