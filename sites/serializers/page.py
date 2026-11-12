@@ -6,7 +6,18 @@ from sites.constraints import MAX_HTML_SIZE, MAX_CSS_SIZE, MAX_JS_SIZE, MAX_THUM
 
 
 class PageCreateInputSerializer(serializers.ModelSerializer):
+    """
+    Validate and deserialize input data for creating a page.
+
+    Validates page metadata and uploaded HTML, CSS, JavaScript,
+    and Open Graph image files.
+    """
+
     class Meta:
+        """
+        Configure the Page model and accepted input fields.
+        """
+
         model = Page
         fields = [
             "title", "page_type", "canonical_url",
@@ -24,22 +35,65 @@ class PageCreateInputSerializer(serializers.ModelSerializer):
     no_index = serializers.BooleanField(default=False)
 
     def validate_title(self, value):
+        """
+        Strip whitespace from the title and ensure it has at least
+        two characters.
+
+        Args:
+            value: Page title provided in the request.
+
+        Returns:
+            str: Cleaned page title.
+
+        Raises:
+            serializers.ValidationError: If the title has fewer than
+                two characters.
+        """
+
         value = value.strip()
         if len(value) < 2:
             raise serializers.ValidationError("Title must be at least 2 characters.")
         return value
 
     def validate_page_type(self, value):
+        """
+        Normalize the page type by stripping whitespace and
+        converting it to lowercase.
+
+        Args:
+            value: Page type provided in the request.
+
+        Returns:
+            str: Normalized page type.
+        """
+
         return value.strip().lower()
 
 
 class PageListQuerySerializer(serializers.Serializer):
+    """
+    Validate query parameters used to filter and search pages.
+
+    Supports filtering by page type and searching by a text query.
+    """
+
     page_type = serializers.CharField(required=False)
     search = serializers.CharField(required=False)
 
 
 class PageOutputSerializer(serializers.ModelSerializer):
+    """
+    Serialize page data for API responses.
+
+    Returns page metadata, SEO fields, uploaded assets, associated
+    site information, and creation and update timestamps.
+    """
+
     class Meta:
+        """
+        Configure the Page model and read-only output fields.
+        """
+        
         model = Page
         fields = [
             "id", "title", "slug", "page_type", "canonical_url",
