@@ -11,9 +11,23 @@ from sites.exceptions import ThemeIncomplete, SiteNotFound, ImageNotFound, Video
 logger = logging.getLogger(__name__)
 
 class SiteService:
+    """Provide business logic for managing sites"""
 
     @classmethod
     def list(cls, *, user, status=None, language=None, search=None):
+        """Retrieve sites created by a user with optional filters.
+
+        Args:
+            user: User whose sites should be retrieved.
+            status: Optional site status to filter by.
+            language: Optional language to filter by.
+            search: Optional search term to match against site names.
+
+        Returns:
+            QuerySet: Filtered sites ordered by creation date.
+        """
+
+
         sites = Site.objects.filter(created_by=user)
 
         if status:
@@ -30,6 +44,27 @@ class SiteService:
     def create(cls, *, created_by, theme, name: str, language: str = "en", description: str = "",
                published_domain=None, favicon=None, meta_description: str = "",
                og_image=None, no_index: bool = False) -> Site:
+        """Create a site using the selected theme's files.
+
+        Args:
+            created_by: User who owns the new site.
+            theme: Theme used to initialize the site.
+            name: Name of the new site.
+            language: Language of the site. Defaults to "en".
+            description: Optional site description.
+            published_domain: Optional domain for publishing the site.
+            favicon: Optional site favicon.
+            meta_description: Optional SEO description.
+            og_image: Optional Open Graph image.
+            no_index: Whether search engines should avoid indexing the site.
+
+        Returns:
+            Site: The newly created site.
+
+        Raises:
+            ThemeIncomplete: If the theme is missing required files.
+        """
+
         
         REQUIRED_THEME_FILES = ("header", "footer", "body", "css_file")
 
@@ -52,7 +87,15 @@ class SiteService:
 
     @staticmethod
     def _copy_file(field_file):
-        """Copy a theme file so the site owns its own copy (None if the theme has none)."""
+        """Create an independent copy of a theme file.
+
+        Args:
+            field_file: Theme file to copy.
+
+        Returns:
+            ContentFile: A copy of the file, or None if no file is provided.
+        """
+
 
         if not field_file:
             return None
@@ -65,6 +108,19 @@ class SiteService:
 
     @classmethod
     def get(cls, *, site_id) -> Site:
+        """Retrieve a site by its ID.
+
+        Args:
+            site_id: ID of the site to retrieve.
+
+        Returns:
+            Site: The requested site.
+
+        Raises:
+            SiteNotFound: If the site does not exist.
+        """
+
+
         sites = Site.objects.all() 
         try:
             return sites.get(pk=site_id)
@@ -78,6 +134,26 @@ class SiteService:
 
     @classmethod
     def update(cls, *, site, user,  **data):
+        """Update a site's information and manage its associated files.
+
+        Args:
+            site: Site instance to update.
+            user: User requesting the update.
+            **data: Site fields and values to update.
+
+        Returns:
+            Site: The updated site.
+
+        Raises:
+            PermissionDenied: If the user is not authorized to update the site.
+            ValidationError: If the published site does not have a domain.
+
+        Notes:
+            Newly uploaded files are deleted if saving fails.
+            Replaced or removed files are deleted after the transaction commits.
+        """
+
+
         status = data.get("status", site.status)
         domain = data.get("published_domain", site.published_domain)
 
@@ -120,6 +196,15 @@ class SiteService:
 
     @classmethod
     def _delete_new_files(cls, site, data, old_names):
+        """Delete newly uploaded files when a site update fails.
+
+        Args:
+            site: Site whose files are being updated.
+            data: Fields and values supplied for the update.
+            old_names: Original file names before the update.
+        """
+
+
         for field in cls.FILE_FIELDS:
             if field not in data:
                 continue
@@ -133,6 +218,13 @@ class SiteService:
 
     @staticmethod
     def _delete_files(files):
+        """Delete files from their respective storage backends.
+
+        Args:
+            files: Iterable of storage and file-name pairs to delete.
+        """
+
+
         for storage, name in files:
             try:
                 storage.delete(name)
@@ -142,6 +234,23 @@ class SiteService:
     @classmethod
     @transaction.atomic
     def delete(cls, *, site_id, user) -> None:
+        """Delete a site and its associated files.
+
+        Args:
+            site_id: ID of the site to delete.
+            user: User requesting the deletion.
+
+        Returns:
+            None
+
+        Raises:
+            PermissionDenied: If the user is not authorized to delete the site.
+
+        Notes:
+            Associated files are deleted after the database transaction commits.
+        """
+
+
         site = cls.get(site_id=site_id)
 
         if not (user.is_staff or site.created_by_id == user.id):
@@ -155,6 +264,17 @@ class SiteService:
 
     @staticmethod
     def _collect_files(site):
+        """Collect storage locations of all files associated with a site.
+
+        Args:
+            site: Site whose associated files should be collected.
+
+        Returns:
+            list: Storage and file-name pairs for site files, page files,
+                additional images, videos, and video posters.
+        """
+
+
         fields = [
             site.favicon, site.og_image,
             site.header, site.footer, site.body, site.css_file, site.js_file,
@@ -170,9 +290,21 @@ class SiteService:
 
 
 class SiteImageService:
+    """Provide business logic for managing site image assets."""
 
     @classmethod
     def list(cls, *, site_id, page=None):
+        """Retrieve images belonging to a site with an optional page filter.
+
+        Args:
+            site_id: ID of the site whose images should be retrieved.
+            page: Optional page ID to filter images by.
+
+        Returns:
+            QuerySet: Filtered images ordered by creation date.
+        """
+
+
         site = SiteService.get(site_id=site_id)
         images = site.image_assets.order_by("-created_at")
         if page:
@@ -183,6 +315,27 @@ class SiteImageService:
     @classmethod
     @transaction.atomic
     def create(cls, *, site_id, user, files, alt_text: str = "", page=None) -> "list[Image]":
+        """Create multiple image assets for a site.
+
+        Args:
+            site_id: ID of the site where images will be created.
+            user: User requesting image creation.
+            files: Image files to upload.
+            alt_text: Alternative text applied to the uploaded images.
+            page: Optional page to associate with the images.
+
+        Returns:
+            list[Image]: The newly created image assets.
+
+        Raises:
+            PermissionDenied: If the user is not authorized to add images.
+            ValidationError: If the page belongs to another site.
+
+        Notes:
+            Uploaded files are cleaned up if saving any image fails.
+        """
+
+
         site = SiteService.get(site_id=site_id)
 
         if not (user.is_staff or site.created_by_id == user.id):
@@ -210,11 +363,39 @@ class SiteImageService:
 
     @classmethod
     def get(cls, *, site_id, image_id) -> Image:
+        """Retrieve an image belonging to a specific site.
+
+        Args:
+            site_id: ID of the site containing the image.
+            image_id: ID of the image to retrieve.
+
+        Returns:
+            Image: The requested image.
+
+        Raises:
+            ImageNotFound: If the image does not exist.
+        """
+
+
         _, image = cls._get_image(site_id=site_id, image_id=image_id)
         return image
 
     @classmethod
     def _get_image(cls, *, site_id, image_id):
+        """Retrieve a site and one of its associated images.
+
+        Args:
+            site_id: ID of the site containing the image.
+            image_id: ID of the image to retrieve.
+
+        Returns:
+            tuple: The site and its requested image.
+
+        Raises:
+            ImageNotFound: If the image does not exist.
+        """
+
+
         site = SiteService.get(site_id=site_id)
         try:
             image = Image.objects.get(pk=image_id, site=site)
@@ -224,6 +405,26 @@ class SiteImageService:
 
     @classmethod
     def update(cls, *, site_id, image_id, user, **data) -> Image:
+        """Update an image and manage its associated file.
+
+        Args:
+            site_id: ID of the site containing the image.
+            image_id: ID of the image to update.
+            user: User requesting the update.
+            **data: Image fields and values to update.
+
+        Returns:
+            Image: The updated image.
+
+        Raises:
+            PermissionDenied: If the user is not authorized to update the image.
+
+        Notes:
+            Newly uploaded files are cleaned up if saving fails.
+            Replaced files are deleted after the transaction commits.
+        """
+
+
         site, image = cls._get_image(site_id=site_id, image_id=image_id)
         if not (user.is_staff or site.created_by_id == user.id):
             raise PermissionDenied("You can't edit this image.")
@@ -252,6 +453,24 @@ class SiteImageService:
     @classmethod
     @transaction.atomic
     def delete(cls, *, site_id, image_id, user) -> None:
+        """Delete an image and its associated file.
+
+        Args:
+            site_id: ID of the site containing the image.
+            image_id: ID of the image to delete.
+            user: User requesting the deletion.
+
+        Returns:
+            None
+
+        Raises:
+            PermissionDenied: If the user is not authorized to delete the image.
+
+        Notes:
+            The associated file is deleted after the transaction commits.
+        """
+
+
         site, image = cls._get_image(site_id=site_id, image_id=image_id)
         if not (user.is_staff or site.created_by_id == user.id):
             raise PermissionDenied("You can't delete this image.")
@@ -264,9 +483,21 @@ class SiteImageService:
             transaction.on_commit(lambda: StorageCleaner.delete_files(storage, name))
 
 class SiteVideoService:
+    """Provide business logic for managing site video assets."""
 
     @classmethod
     def list(cls, *, site_id, page=None):
+        """Retrieve videos belonging to a site with an optional page filter.
+
+        Args:
+            site_id: ID of the site whose videos should be retrieved.
+            page: Optional page ID to filter videos by.
+
+        Returns:
+            QuerySet: Filtered videos ordered by creation date.
+        """
+
+
         site = SiteService.get(site_id=site_id)
         videos = site.video_assets.order_by("-created_at")
         if page:
@@ -277,6 +508,26 @@ class SiteVideoService:
     @classmethod
     @transaction.atomic
     def create(cls, *, site_id, user, files, page=None) -> "list[Video]":
+        """Create multiple video assets for a site.
+
+        Args:
+            site_id: ID of the site where videos will be created.
+            user: User requesting video creation.
+            files: Video files to upload.
+            page: Optional page to associate with the videos.
+
+        Returns:
+            list[Video]: The newly created video assets.
+
+        Raises:
+            PermissionDenied: If the user is not authorized to add videos.
+            ValidationError: If the page belongs to another site.
+
+        Notes:
+            Uploaded files are cleaned up if saving any video fails.
+        """
+
+
         site = SiteService.get(site_id=site_id)
 
         if not (user.is_staff or site.created_by_id == user.id):
@@ -306,11 +557,39 @@ class SiteVideoService:
 
     @classmethod
     def get(cls, *, site_id, video_id) -> Video:
+        """Retrieve a video belonging to a specific site.
+
+        Args:
+            site_id: ID of the site containing the video.
+            video_id: ID of the video to retrieve.
+
+        Returns:
+            Video: The requested video.
+
+        Raises:
+            VideoNotFound: If the video does not exist.
+        """
+
+
         _, video = cls._get_video(site_id=site_id, video_id=video_id)
         return video
 
     @classmethod
     def _get_video(cls, *, site_id, video_id):
+        """Retrieve a site and one of its associated videos.
+
+        Args:
+            site_id: ID of the site containing the video.
+            video_id: ID of the video to retrieve.
+
+        Returns:
+            tuple: The site and its requested video.
+
+        Raises:
+            VideoNotFound: If the video does not exist.
+        """
+
+
         site = SiteService.get(site_id=site_id)
         try:
             video = Video.objects.get(pk=video_id, site=site)
@@ -321,6 +600,27 @@ class SiteVideoService:
     FILE_FIELDS = ("file", "poster")
     @classmethod
     def update(cls, *, site_id, video_id, user, **data) -> Video:
+        """Update a video and manage its associated files.
+
+        Args:
+            site_id: ID of the site containing the video.
+            video_id: ID of the video to update.
+            user: User requesting the update.
+            **data: Video fields and values to update.
+
+        Returns:
+            Video: The updated video.
+
+        Raises:
+            PermissionDenied: If the user is not authorized to update the video.
+
+        Notes:
+            The video duration is reset when its file is replaced.
+            Newly uploaded files are cleaned up if saving fails.
+            Replaced or removed files are deleted after the transaction commits.
+        """
+
+
         site, video = cls._get_video(site_id=site_id, video_id=video_id)
         if not (user.is_staff or site.created_by_id == user.id):
             raise PermissionDenied("You can't edit this video.")
@@ -360,6 +660,24 @@ class SiteVideoService:
     @classmethod
     @transaction.atomic
     def delete(cls, *, site_id, video_id, user) -> None:
+        """Delete a video and its associated files.
+
+        Args:
+            site_id: ID of the site containing the video.
+            video_id: ID of the video to delete.
+            user: User requesting the deletion.
+
+        Returns:
+            None
+
+        Raises:
+            PermissionDenied: If the user is not authorized to delete the video.
+
+        Notes:
+            Associated files are deleted after the transaction commits.
+        """
+
+
         site, video = cls._get_video(site_id=site_id, video_id=video_id)
         if not (user.is_staff or site.created_by_id == user.id):
             raise PermissionDenied("You can't delete this video.")

@@ -4,11 +4,26 @@ from sites.utils import StorageCleaner
 from sites.exceptions import PageAlreadyExists, PageNotFound
 from django.db import transaction
 from django.utils.text import slugify
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.exceptions import PermissionDenied
+
 
 class PageService :
+    """Provide business logic for managing site pages."""
+
     @classmethod
     def list(cls, *, site_id, page_type=None, search=None):
+        """Retrieve pages belonging to a site with optional filters.
+
+        Args:
+            site_id: ID of the site whose pages should be retrieved.
+            page_type: Optional page type to filter by.
+            search: Optional search term to match against page titles.
+
+        Returns:
+            QuerySet: Filtered pages ordered by creation date.
+        """
+
+         
         site = SiteService.get(site_id=site_id)
         pages = site.pages.order_by("-created_at")
 
@@ -21,6 +36,24 @@ class PageService :
 
     @classmethod
     def create(cls, *, site_id, user, title: str, page_type: str, **data) -> Page:
+        """Create a new page for a site.
+
+        Args:
+            site_id: ID of the site where the page will be created.
+            user: User requesting page creation.
+            title: Title of the new page.
+            page_type: Type of page to create.
+            **data: Additional page fields and values.
+
+        Returns:
+            Page: The newly created page.
+
+        Raises:
+            PermissionDenied: If the user is not authorized to create pages.
+            PageAlreadyExists: If a page with the same title or slug exists.
+        """
+
+
         site = SiteService.get(site_id=site_id)
 
         if not (user.is_staff or site.created_by_id == user.id):
@@ -43,11 +76,39 @@ class PageService :
 
     @classmethod
     def get(cls, *, site_id, page_id) -> Page:
+        """Retrieve a page belonging to a specific site.
+
+        Args:
+            site_id: ID of the site containing the page.
+            page_id: ID of the page to retrieve.
+
+        Returns:
+            Page: The requested page.
+
+        Raises:
+            PageNotFound: If the page does not exist.
+        """
+
+
         _, page = cls._get_page(site_id=site_id, page_id=page_id)
         return page
 
     @classmethod
     def _get_page(cls, *, site_id, page_id):
+        """Retrieve a site and one of its pages.
+
+        Args:
+            site_id: ID of the site containing the page.
+            page_id: ID of the page to retrieve.
+
+        Returns:
+            tuple: The site and its requested page.
+
+        Raises:
+            PageNotFound: If the page does not exist.
+        """
+
+
         site = SiteService.get(site_id=site_id)
         try:
             page = site.pages.get(pk=page_id)
@@ -57,6 +118,19 @@ class PageService :
 
     @staticmethod
     def _ensure_unique(site, title, slug, exclude_pk=None):
+        """Ensure that a page title and slug are unique within a site.
+
+        Args:
+            site: Site whose pages should be checked.
+            title: Page title to validate.
+            slug: Page slug to validate.
+            exclude_pk: Optional page ID to exclude from uniqueness checks.
+
+        Raises:
+            PageAlreadyExists: If the title or slug is already in use.
+        """
+
+
         pages = site.pages.exclude(pk=exclude_pk) if exclude_pk else site.pages.all()
         if pages.filter(title__iexact=title).exists():
             raise PageAlreadyExists()
@@ -67,6 +141,27 @@ class PageService :
 
     @classmethod
     def update(cls, *, site_id, page_id, user, **data) -> Page:
+        """Update an existing page and manage its associated files.
+
+        Args:
+            site_id: ID of the site containing the page.
+            page_id: ID of the page to update.
+            user: User requesting the update.
+            **data: Page fields and values to update.
+
+        Returns:
+            Page: The updated page.
+
+        Raises:
+            PermissionDenied: If the user is not authorized to update the page.
+            PageAlreadyExists: If the updated title or slug is already in use.
+
+        Notes:
+            Newly uploaded files are cleaned up if saving fails.
+            Replaced or removed files are deleted after the transaction commits.
+        """
+
+
         site, page = cls._get_page(site_id=site_id, page_id=page_id)
         if not (user.is_staff or site.created_by_id == user.id):
             raise PermissionDenied("You can't edit this page.")
@@ -110,6 +205,24 @@ class PageService :
     @classmethod
     @transaction.atomic
     def delete(cls, *, site_id, page_id, user) -> None:
+        """Delete a page and its associated files.
+
+        Args:
+            site_id: ID of the site containing the page.
+            page_id: ID of the page to delete.
+            user: User requesting the deletion.
+
+        Returns:
+            None
+
+        Raises:
+            PermissionDenied: If the user is not authorized to delete the page.
+
+        Notes:
+            Associated files are deleted after the database transaction commits.
+        """
+
+
         site, page = cls._get_page(site_id=site_id, page_id=page_id)
         if not (user.is_staff or site.created_by_id == user.id):
             raise PermissionDenied("You can't delete this page.")
@@ -123,6 +236,18 @@ class PageService :
 
     @staticmethod
     def _collect_files(page):
+        """Collect storage locations of all files associated with a page.
+
+        Args:
+            page: Page whose associated files should be collected.
+
+        Returns:
+            list: Storage and file-name pairs for the page's files,
+                including its HTML, CSS, JavaScript, Open Graph image,
+                additional images, videos, and video posters.
+        """
+
+
         fields = [page.html_file, page.css_file, page.js_file, page.og_image]
         for image in page.image_assets.all():
             fields.append(image.file)

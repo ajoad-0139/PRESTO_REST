@@ -12,11 +12,36 @@ from sites.exceptions import (ThemeAlreadyExists, ThemeNotFound, ThemeInUse,
 logger = logging.getLogger(__name__)
 
 class ThemeService :
+    """Provide business logic for managing themes and their associated assets."""
+
     @classmethod
     @transaction.atomic
     def create(cls, *, name: str, thumbnail, header,footer, body, 
-               css_file, language: str = "en", js_file=None, slug: str = "",
-               description: str = "", is_active: bool = True, created_by) -> Theme:
+        css_file, language: str = "en", js_file=None, slug: str = "",
+        description: str = "", is_active: bool = True, created_by) -> Theme:
+        """Create a new theme.
+
+        Args:
+            name: Name of the theme.
+            thumbnail: Theme thumbnail image.
+            header: Header template file.
+            footer: Footer template file.
+            body: Body template file.
+            css_file: Theme CSS file.
+            language: Theme language.
+            js_file: Optional theme JavaScript file.
+            slug: URL-friendly theme identifier.
+            description: Theme description.
+            is_active: Whether the theme is active.
+            created_by: User who created the theme.
+
+        Returns:
+            The created theme.
+
+        Raises:
+            ThemeAlreadyExists: If a theme with the same name and language exists.
+        """
+        
         
         themes = Theme.objects.filter(name__iexact=name, language=language)
         if themes.exists():
@@ -34,6 +59,18 @@ class ThemeService :
 
     @classmethod
     def list(cls, *, is_active=None, language=None, search=None):
+        """Return themes with optional filtering.
+
+        Args:
+            is_active: Filter by active status.
+            language: Filter by language.
+            search: Filter by theme name.
+
+        Returns:
+            QuerySet of matching themes.
+        """
+
+
         themes = Theme.objects.order_by("-created_at")
 
         if is_active is not None:
@@ -47,6 +84,19 @@ class ThemeService :
 
     @classmethod
     def get(cls, *, theme_id) -> Theme:
+        """Retrieve a theme by its ID.
+
+        Args:
+            theme_id: ID of the theme.
+
+        Returns:
+            The requested theme.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+        """
+
+
         try:
             return Theme.objects.get(pk=theme_id)
         except Theme.DoesNotExist:
@@ -56,6 +106,23 @@ class ThemeService :
 
     @classmethod
     def update(cls, *, theme_id, user, **data) -> Theme:
+        """Update an existing theme.
+
+        Args:
+            theme_id: ID of the theme.
+            user: User requesting the update.
+            **data: Fields to update.
+
+        Returns:
+            The updated theme.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            ThemeAlreadyExists: If the updated name and language already exist.
+            PermissionDenied: If the user cannot edit the theme.
+        """
+
+
         theme = cls.get(theme_id=theme_id)
         if not (user.is_staff or theme.created_by_id == user.id):
             raise PermissionDenied("You can't edit this theme.")
@@ -102,6 +169,19 @@ class ThemeService :
     @classmethod
     @transaction.atomic
     def delete(cls, *, theme_id, user) -> None:
+        """Delete a theme and its associated files.
+
+        Args:
+            theme_id: ID of the theme.
+            user: User requesting the deletion.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            PermissionDenied: If the user cannot delete the theme.
+            ThemeInUse: If the theme is associated with sites.
+        """
+
+
         theme = cls.get(theme_id=theme_id)
 
         if not (user.is_staff or theme.created_by_id == user.id):
@@ -121,6 +201,16 @@ class ThemeService :
 
     @staticmethod
     def _collect_files(theme):
+        """Collect all files associated with a theme.
+
+        Args:
+            theme: Theme whose files should be collected.
+
+        Returns:
+            List of storage and file-name pairs.
+        """
+
+
         fields = [theme.thumbnail, theme.header, theme.footer, theme.body, theme.css_file, theme.js_file]
         for image in theme.image_assets.all():
             fields.append(image.file)
@@ -131,6 +221,13 @@ class ThemeService :
 
     @staticmethod
     def _delete_files(files):
+        """Delete files from their respective storage backends.
+
+        Args:
+            files: List of storage and file-name pairs.
+        """
+
+
         for storage, name in files:
             try:
                 storage.delete(name)
@@ -140,8 +237,23 @@ class ThemeService :
                 
 
 class ThemeImageService :
+    """Manage image assets associated with themes."""
+
     @staticmethod
     def _get_theme(theme_id) -> Theme:
+        """Retrieve a theme by its ID.
+
+        Args:
+            theme_id: ID of the theme.
+
+        Returns:
+            The requested theme.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+        """
+
+
         try:
             return Theme.objects.get(pk=theme_id)
         except Theme.DoesNotExist:
@@ -149,12 +261,39 @@ class ThemeImageService :
         
     @classmethod
     def list(cls, *, theme_id):
+        """Return images belonging to a theme.
+
+        Args:
+            theme_id: ID of the theme.
+
+        Returns:
+            QuerySet of theme images.
+        """
+
+
         theme = cls._get_theme(theme_id)
         return theme.image_assets.order_by("-created_at")
         
     @classmethod
     @transaction.atomic
     def create(cls, *, theme_id, user, files, alt_text: str = "") -> "list[Image]":
+        """Create multiple image assets for a theme.
+
+        Args:
+            theme_id: ID of the theme.
+            user: User requesting image creation.
+            files: Image files to upload.
+            alt_text: Alternative text for the images.
+
+        Returns:
+            List of created images.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            PermissionDenied: If the user cannot add images to the theme.
+        """
+
+
         theme = cls._get_theme(theme_id)
 
         if not (user.is_staff or theme.created_by_id == user.id):
@@ -173,11 +312,41 @@ class ThemeImageService :
 
     @classmethod
     def get(cls, *, theme_id, image_id) -> Image:
+        """Retrieve an image belonging to a theme.
+
+        Args:
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+
+        Returns:
+            The requested image.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            ImageNotFound: If the image does not exist in the theme.
+        """
+
+
         _, image = cls._get_image(theme_id=theme_id, image_id=image_id)
         return image
 
     @classmethod
     def _get_image(cls, *, theme_id, image_id):
+        """Retrieve a theme and its associated image.
+
+        Args:
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+
+        Returns:
+            Tuple containing the theme and image.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            ImageNotFound: If the image does not belong to the theme.
+        """
+
+
         theme = ThemeService.get(theme_id=theme_id)
 
         try:
@@ -189,6 +358,24 @@ class ThemeImageService :
 
     @classmethod
     def update(cls, *, theme_id, image_id, user, **data) -> Image:
+        """Update an existing theme image.
+
+        Args:
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+            user: User requesting the update.
+            **data: Fields to update.
+
+        Returns:
+            The updated image.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            ImageNotFound: If the image does not belong to the theme.
+            PermissionDenied: If the user cannot edit the image.
+        """
+
+
         theme, image = cls._get_image(theme_id=theme_id, image_id=image_id)
 
         if not (user.is_staff or theme.created_by_id == user.id):
@@ -219,6 +406,20 @@ class ThemeImageService :
     @classmethod
     @transaction.atomic
     def delete(cls, *, theme_id, image_id, user) -> None:
+        """Delete an image from a theme.
+
+        Args:
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+            user: User requesting the deletion.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            ImageNotFound: If the image does not belong to the theme.
+            PermissionDenied: If the user cannot delete the image.
+        """
+
+
         theme, image = cls._get_image(theme_id=theme_id, image_id=image_id)
 
         if not (user.is_staff or theme.created_by_id == user.id):
@@ -233,9 +434,23 @@ class ThemeImageService :
 
 
 class ThemeVideoService:
+    """Manage video assets associated with themes."""
 
     @staticmethod
     def _get_theme(theme_id) -> Theme:
+        """Retrieve a theme by its ID.
+
+        Args:
+            theme_id: ID of the theme.
+
+        Returns:
+            The requested theme.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+        """
+
+
         try:
             return Theme.objects.get(pk=theme_id)
         except Theme.DoesNotExist:
@@ -243,12 +458,38 @@ class ThemeVideoService:
 
     @classmethod
     def list(cls, *, theme_id):
+        """Return videos belonging to a theme.
+
+        Args:
+            theme_id: ID of the theme.
+
+        Returns:
+            QuerySet of theme videos.
+        """
+
+
         theme = cls._get_theme(theme_id)
         return theme.video_assets.order_by("-created_at")
 
     @classmethod
     @transaction.atomic
     def create(cls, *, theme_id, user, files) -> "list[Video]":
+        """Create multiple video assets for a theme.
+
+        Args:
+            theme_id: ID of the theme.
+            user: User requesting video creation.
+            files: Video files to upload.
+
+        Returns:
+            List of created videos.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            PermissionDenied: If the user cannot add videos to the theme.
+        """
+
+
         theme = cls._get_theme(theme_id)
 
         if not (user.is_staff or theme.created_by_id == user.id):
@@ -270,11 +511,41 @@ class ThemeVideoService:
 
     @classmethod
     def get(cls, *, theme_id, video_id) -> Video:
+        """Retrieve a video belonging to a theme.
+
+        Args:
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+
+        Returns:
+            The requested video.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            VideoNotFound: If the video does not belong to the theme.
+        """
+
+
         _, video = cls._get_video(theme_id=theme_id, video_id=video_id)
         return video
 
     @classmethod
     def _get_video(cls, *, theme_id, video_id):
+        """Retrieve a theme and its associated video.
+
+        Args:
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+
+        Returns:
+            Tuple containing the theme and video.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            VideoNotFound: If the video does not belong to the theme.
+        """
+
+
         theme = ThemeService.get(theme_id=theme_id)
 
         try:
@@ -288,6 +559,24 @@ class ThemeVideoService:
     
     @classmethod
     def update(cls, *, theme_id, video_id, user, **data) -> Video:
+        """Update an existing theme video.
+
+        Args:
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+            user: User requesting the update.
+            **data: Fields to update.
+
+        Returns:
+            The updated video.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            VideoNotFound: If the video does not belong to the theme.
+            PermissionDenied: If the user cannot edit the video.
+        """
+
+
         theme, video = cls._get_video(theme_id=theme_id, video_id=video_id)
 
         if not (user.is_staff or theme.created_by_id == user.id):
@@ -332,6 +621,20 @@ class ThemeVideoService:
     @classmethod
     @transaction.atomic
     def delete(cls, *, theme_id, video_id, user) -> None:
+        """Delete a video from a theme.
+
+        Args:
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+            user: User requesting the deletion.
+
+        Raises:
+            ThemeNotFound: If the theme does not exist.
+            VideoNotFound: If the video does not belong to the theme.
+            PermissionDenied: If the user cannot delete the video.
+        """
+
+
         theme, video = cls._get_video(theme_id=theme_id, video_id=video_id)
 
         if not (user.is_staff or theme.created_by_id == user.id):
