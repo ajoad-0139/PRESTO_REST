@@ -1,7 +1,8 @@
-import os
-import logging
+"""Provide file upload path generation and storage cleanup utilities."""
 
-from django.core.files.storage import FileSystemStorage
+import logging
+import os
+
 from django.db.models import FileField
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ FOLDERS = {
 
 
 def file_upload_path(instance, filename):
+    """Generate an organized upload path based on file type and model owner."""
     ext = os.path.splitext(filename)[1].lower().lstrip(".")
     folder = FOLDERS.get(ext, "others")
     model = instance._meta.model_name
@@ -35,18 +37,16 @@ def file_upload_path(instance, filename):
     return f"{owner}/{folder}/{filename}"
 
 
-
 class StorageCleaner:
+    """Provide utilities for deleting files from storage."""
 
     @staticmethod
     def delete_written_files(instance):
-        """
-        Remove files that save() already wrote to storage for a NEW instance.
-        Call this only when creating; on an update it would also delete files the row already had.
-        """
+        """Delete files already written to storage for a new model instance."""
         for field in instance._meta.concrete_fields:
-            if not isinstance(field, FileField):     
+            if not isinstance(field, FileField):
                 continue
+
             file = getattr(instance, field.name)
             if file and getattr(file, "_committed", False):
                 try:
@@ -56,6 +56,7 @@ class StorageCleaner:
 
     @staticmethod
     def delete_files(storage, name):
+        """Delete a named file from the specified storage backend."""
         try:
             storage.delete(name)
         except Exception:
