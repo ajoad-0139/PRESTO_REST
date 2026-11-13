@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.views import APIView
-from sites.responses import success_response
-from sites.pagination import DefaultPagination
+from sites.utils.responses import success_response
+from sites.utils.pagination import DefaultPagination
 from rest_framework.permissions import IsAuthenticated
 from sites.services.theme import (ThemeService, ThemeImageService , ThemeVideoService)
 from sites.serializers.asset import ImageOutputSerializer, VideoOutputSerializer

@@ -2,8 +2,8 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from sites.pagination import DefaultPagination
-from sites.responses import success_response
+from sites.utils.pagination import DefaultPagination
+from sites.utils.responses import success_response
 from sites.services.site import SiteService, SiteImageService, SiteVideoService
 from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
     SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer,

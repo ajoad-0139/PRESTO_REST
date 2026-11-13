@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from sites.models import Page
 from sites.validators import html_validator, css_validator, js_validator, image_validator, validate_max_size
-from sites.constraints import MAX_HTML_SIZE, MAX_CSS_SIZE, MAX_JS_SIZE, MAX_THUMBNAIL_SIZE
+from sites.utils.constraints import MAX_HTML_SIZE, MAX_CSS_SIZE, MAX_JS_SIZE, MAX_THUMBNAIL_SIZE
 
 
 class PageCreateInputSerializer(serializers.ModelSerializer):

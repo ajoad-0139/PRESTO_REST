@@ -3,7 +3,7 @@ from rest_framework import serializers
 from sites.models import Site, Theme, Page
 from sites.validators import image_validator, validate_max_size, video_validator
 from sites.serializers.asset import ImageOutputSerializer, VideoOutputSerializer
-from sites.constraints import MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE
+from sites.utils.constraints import MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE
 
 
 class SiteCreateInputSerializer(serializers.ModelSerializer):

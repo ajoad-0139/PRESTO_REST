@@ -3,7 +3,7 @@ import logging
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils.text import slugify
-from sites.utils import StorageCleaner
+from sites.utils.storage import StorageCleaner
 from sites.models import Site, Image, Video
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from sites.exceptions import ThemeIncomplete, SiteNotFound, ImageNotFound, VideoNotFound

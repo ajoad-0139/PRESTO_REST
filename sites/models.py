@@ -8,7 +8,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.text import slugify
 
-from sites.utils import file_upload_path
+from sites.utils.storage import file_upload_path
 
 
 class Theme(models.Model):

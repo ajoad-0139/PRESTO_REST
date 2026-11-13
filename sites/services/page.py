@@ -1,6 +1,6 @@
 from sites.services.site import SiteService
 from sites.models import Page
-from sites.utils import StorageCleaner
+from sites.utils.storage import StorageCleaner
 from sites.exceptions import PageAlreadyExists, PageNotFound
 from django.db import transaction
 from django.utils.text import slugify

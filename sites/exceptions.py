@@ -7,7 +7,7 @@ from django.db import DatabaseError
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.views import exception_handler
 
-from sites.responses import error_response
+from sites.utils.responses import error_response
 
 logger = logging.getLogger(__name__)
 

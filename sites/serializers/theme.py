@@ -2,7 +2,7 @@ from sites.models import Theme
 from rest_framework import serializers
 from sites.serializers.asset import ImageOutputSerializer, VideoOutputSerializer
 from sites.validators import validate_max_size, image_validator, html_validator, css_validator, js_validator, video_validator
-from sites.constraints import MAX_CSS_SIZE, MAX_HTML_SIZE, MAX_JS_SIZE, MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE
+from sites.utils.constraints import MAX_CSS_SIZE, MAX_HTML_SIZE, MAX_JS_SIZE, MAX_THUMBNAIL_SIZE, SUPPORTED_LANGUAGES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE
 
 
 class ThemeCreateInputSerializer(serializers.ModelSerializer):

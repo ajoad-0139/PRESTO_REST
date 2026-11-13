@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models import ProtectedError
 from sites.models import Theme, Image, Video
 from rest_framework.exceptions import PermissionDenied
-from sites.utils import StorageCleaner
+from sites.utils.storage import StorageCleaner
 from django.utils.text import slugify
 from sites.exceptions import (ThemeAlreadyExists, ThemeNotFound, ThemeInUse,
     ImageNotFound, VideoNotFound)

@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
 from sites.exceptions import APIError
-from sites.responses import success_response
+from sites.utils.responses import success_response
 
 
 class LoginSerializer(serializers.Serializer):

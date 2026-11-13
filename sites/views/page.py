@@ -2,7 +2,7 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from sites.responses import success_response
+from sites.utils.responses import success_response
 from sites.services.page import PageService
 from sites.serializers.page import (
     PageCreateInputSerializer, PageListQuerySerializer, PageOutputSerializer,
