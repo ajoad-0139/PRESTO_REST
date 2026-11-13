@@ -9,6 +9,8 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import FileField
 
+from sites.exceptions import UploadBusy
+
 logger = logging.getLogger(__name__)
 
 FOLDERS = {
@@ -87,9 +89,6 @@ class StorageCleaner:
             logger.exception("Could not delete file %s", name)
 
 
-class UploadBusy(Exception):
-    """Indicate that the upload queue is full."""
-
 
 _lock = threading.Lock()
 _pool = None
@@ -137,7 +136,7 @@ def _submit(fn, *args):
     timeout = getattr(settings, "UPLOAD_QUEUE_WAIT", 30)
 
     if not slots.acquire(timeout=timeout):
-        raise UploadBusy("Too many uploads in progress, try again shortly.")
+        raise UploadBusy()
 
     try:
         future = pool.submit(fn, *args)

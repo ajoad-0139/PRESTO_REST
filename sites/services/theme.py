@@ -6,6 +6,7 @@ from sites.models import Theme, Image, Video
 from rest_framework.exceptions import PermissionDenied
 from sites.utils.storage import StorageCleaner
 from django.utils.text import slugify
+from sites.utils.storage import store_files, save_rows
 from sites.exceptions import (ThemeAlreadyExists, ThemeNotFound, ThemeInUse,
     ImageNotFound, VideoNotFound)
 
@@ -299,14 +300,19 @@ class ThemeImageService :
         if not (user.is_staff or theme.created_by_id == user.id):
             raise PermissionDenied("You can't add images to this theme.")
 
-        images = []
-        try:
-            for file in files:
-                images.append(Image.objects.create(theme=theme, file=file, alt_text=alt_text))
-        except Exception:
-            for image in images:
-                image.file.storage.delete(image.file.name)
-            raise
+        # images = []
+        # try:
+        #     for file in files:
+        #         images.append(Image.objects.create(theme=theme, file=file, alt_text=alt_text))
+        # except Exception:
+        #     for image in images:
+        #         image.file.storage.delete(image.file.name)
+        #     raise
+
+        images = [Image(theme=theme, file=file, alt_text=alt_text) for file in files]
+
+        ledger = store_files(images)     
+        save_rows(images, ledger)
 
         return images
 

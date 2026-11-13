@@ -123,3 +123,9 @@ class PageNotFound(APIError):
 
     status_code = 404
     default_detail = "Page not found."
+
+class UploadBusy(APIError):
+    """Indicate that the upload queue is full."""
+
+    status_code = 503
+    default_detail = "Too many uploads in progress, try again shortly."
